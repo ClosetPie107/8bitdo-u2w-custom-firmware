@@ -1,0 +1,6 @@
+patches/build/
+backups/
+*.bin
+*.dat
+__pycache__/
+*.pyc
