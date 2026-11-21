@@ -27,6 +27,7 @@ static int      ltk_neg_called;
 static uint8_t  last_adv_buf[31];
 static unsigned adv_busy_once;
 static uint32_t mock_btn;
+static uint32_t mock_raw_btn;
 static uint32_t mock_ls;
 static uint32_t mock_rs;
 static uint16_t mock_trig;
@@ -117,6 +118,7 @@ void host_get_local_bdaddr(uint8_t out[6]) {
 }
 
 uint32_t host_get_buttons(void) { return mock_btn; }
+uint32_t host_get_raw_buttons(void) { return mock_raw_btn; }
 uint32_t host_get_lstick_raw(void) { return mock_ls; }
 uint32_t host_get_rstick_raw(void) { return mock_rs; }
 uint16_t host_get_triggers_raw(void) { return mock_trig; }
@@ -315,6 +317,13 @@ int main(void) {
     mock_btn = 1u << 25;
     s2_send_input_report();
     assert(last_noti_buf[4] == 0x04u); /* Right paddle sends GR alone. */
+    mock_btn = 0u;
+    mock_raw_btn = 1u << 27;
+    s2_send_input_report();
+    assert(last_noti_buf[4] == 0x02u); /* Square (Turbo, raw bit 27) sends Capture. */
+    mock_raw_btn = 0u;
+    s2_send_input_report();
+    assert(last_noti_buf[4] == 0x00u);
     printf("PASS: H2/H3/H4/M3 input report mapping verified!\n");
 
     /* 6b. Verify 40-byte (0x28, hdr=0xf0) motion encoding and quaternion integration */

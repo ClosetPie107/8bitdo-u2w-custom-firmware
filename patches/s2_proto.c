@@ -17,6 +17,7 @@ extern int host_ll_ltk_neg_reply(uint16_t conn_h);
 extern int  host_set_adv_data(const uint8_t *p, uint8_t len);
 extern void host_get_local_bdaddr(uint8_t out[6]);
 extern uint32_t host_get_buttons(void);
+extern uint32_t host_get_raw_buttons(void);
 extern uint32_t host_get_lstick_raw(void);
 extern uint32_t host_get_rstick_raw(void);
 extern uint16_t host_get_triggers_raw(void);
@@ -1284,16 +1285,18 @@ int s2_send_input_report(void) {
     }
 
 #ifdef HOST_TEST
-    uint32_t btn  = host_get_buttons();
-    uint32_t ls   = host_get_lstick_raw();
-    uint32_t rs   = host_get_rstick_raw();
-    uint16_t trig = host_get_triggers_raw();
+    uint32_t btn     = host_get_buttons();
+    uint32_t raw_btn = host_get_raw_buttons();
+    uint32_t ls      = host_get_lstick_raw();
+    uint32_t rs      = host_get_rstick_raw();
+    uint16_t trig    = host_get_triggers_raw();
 #else
     const volatile uint32_t *in = (const volatile uint32_t *)0x00846d44u;
-    uint32_t btn  = in[0];
-    uint32_t ls   = in[1];
-    uint32_t rs   = in[2];
-    uint16_t trig = *(const volatile uint16_t *)0x00846d50u;
+    uint32_t btn     = in[0];
+    uint32_t raw_btn = *(const volatile uint32_t *)0x00845fe8u;
+    uint32_t ls      = in[1];
+    uint32_t rs      = in[2];
+    uint16_t trig    = *(const volatile uint16_t *)0x00846d50u;
 #endif
 
     uint8_t rep[63];
@@ -1343,9 +1346,11 @@ int s2_send_input_report(void) {
     if (btn & (1u << 7))  b3 |= 0x04u; /* Left */
     if (btn & (1u << 6))  b3 |= 0x02u; /* Right */
 
-    /* System and grip buttons. P2 is the left paddle on the Ultimate 2 Wireless. */
+    /* System and grip buttons. P2 is the left paddle on the Ultimate 2 Wireless.
+     * The physical Square (Turbo) button is bit 27 in raw matrix 0x845fe8 and is
+     * stripped by stock Turbo processing before 0x846d44; map it to Capture. */
     if (btn & (1u << 17)) b4 |= 0x01u; /* Home */
-    if (btn & (1u << 16)) b4 |= 0x02u; /* Capture (Share) */
+    if ((btn & (1u << 16)) || (raw_btn & (1u << 27))) b4 |= 0x02u; /* Capture (Share / Square) */
     if (btn & (1u << 26)) b4 |= 0x08u; /* GL (P2) */
     if (btn & (1u << 25)) b4 |= 0x04u; /* GR (P1) */
 

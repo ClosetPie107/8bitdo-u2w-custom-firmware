@@ -19,6 +19,7 @@ Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimat
   - **6-axis IMU / gyro & accelerometer** (Switch 2 native 40-byte `0x09` motion packing + fixed-point quaternion integration)
   - **Vibration / rumble:** both in-game streaming HD Rumble 2 (handle `0x0012`) and system UI vibration presets (`0x0A/02` connect buzz, vibration toggle, Search for Controllers)
   - **Rear paddles mapped to GL / GR** (Nintendo Pro Controller 2 grip buttons)
+  - **Square (Turbo) button mapped to Capture** (screenshots / video clips on Switch 2)
   - **Battery level reporting** and stock front profile LED behavior
 - **Persistent mode memory (saved in flash across power cycles):**
   - **Bluetooth (BT switch):**
