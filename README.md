@@ -1,6 +1,6 @@
 # 8BitDo Ultimate 2 Wireless — Custom Firmware
 
-Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimate 2 Wireless** (`VID 0x2DC8`, `PID 0x6012`, stock firmware **v1.10**), adding native **Nintendo Switch 2 Pro Controller BLE** support and **persistent Bluetooth/2.4G mode memory** while keeping stock 8BitDo Bluetooth, 2.4G dongle, and USB modes intact.
+Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimate 2 Wireless** (`VID 0x2DC8`, `PID 0x6012`, stock firmware **v1.10**), adding native **Nintendo Switch 2 Pro Controller BLE** support, **4 universal Bluetooth device slots**, an experimental **Xbox Elite Series 2 BLE** mode, and **persistent Bluetooth/2.4G mode memory** while keeping stock 8BitDo Bluetooth, 2.4G dongle, and USB modes intact.
 
 > [!WARNING]
 > **Flashing custom firmware carries risk.**
@@ -21,12 +21,19 @@ Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimat
   - **Rear paddles mapped to GL / GR** (Nintendo Pro Controller 2 grip buttons)
   - **Square (Turbo) button mapped to Capture** (screenshots / video clips on Switch 2)
   - **Battery level reporting** and stock front profile LED behavior
-- **Persistent mode memory (saved in flash across power cycles):**
-  - **Bluetooth (BT switch):**
-    - `Home + Y` → **Switch 2 BLE** (saved)
-    - `Home + B` → **Stock 8BitDo BLE (DInput)** (saved, full PC/Steam gyro & paddles)
-    - `Home` → **Last used** Bluetooth mode (defaults to Switch 2 BLE)
-  - **2.4G Dongle (2.4G switch):**
+- **Experimental Xbox Elite Series 2 BLE mode (`8BitDo Ultimate 2 Xbox`):**
+  - Emulates Xbox Elite Series 2 (`045e:0b05`) over BLE based on the [8bitdo-ultimate-toolkit](https://github.com/craigmdennis/8bitdo-ultimate-toolkit/blob/u2w-xbox-rumble/u2w_xbox/README.md) report format
+  - Exposes **rumble** (both Apple Core Haptics quadratic and SDL linear scaling), **battery level**, and **all 4 independent rear/extra paddles (`P1`–`P4`)**
+  - Retains live 6-axis IMU bytes in the 39-byte raw HID report tail (`bytes 23–34`) for raw-HID-aware apps (note: Apple GameController and SDL's Xbox driver do not expose motion for Xbox controllers)
+- **4 Universal Bluetooth device slots (saved in flash across power cycles):**
+  - Each D-pad direction (**Up**, **Down**, **Left**, **Right**) is an independent device slot with its own **BLE mode**, **MAC address**, and **pairing bond** (including isolated Switch 2 bonds so you can even pair multiple Switch 2 consoles).
+  - **Factory defaults:** `Up` = Stock 8BitDo, `Down` = Stock 8BitDo, `Left` = Xbox Elite, `Right` = Switch 2.
+  - **Bluetooth (BT switch, from off):**
+    - `Home` → Reconnect to the **last-used** slot
+    - `Home + Up / Down / Left / Right` → **Recall** that slot in whatever BLE mode is saved to it
+    - `D-pad + B / X / Y + Home` → **Assign** that slot's BLE mode (`B` = Stock 8BitDo, `X` = Xbox Elite, `Y` = Switch 2). If the mode changed, that slot gets a fresh MAC identity and its old bond is cleared so you can press **Pair** cleanly.
+    - `Home + B / X / Y` (no D-pad) → Jump to the **last-used slot** of that mode (or reassign the active slot if no slot uses it)
+  - **2.4G Dongle (2.4G switch, from off):**
     - `Home + B` → **DInput** (saved)
     - `Home + X` → **XInput** (saved)
     - `Home + Y` → **Switch** (saved)
@@ -71,11 +78,13 @@ python3 tools/flash.py --execute
 ```
 Wait ~15–25 seconds until you see `SUCCESS: ... sector(s) flashed and verified`. Header sector `0x5000` is always programmed last, and every sector is read back and verified immediately after writing.
 
-### 4. Power-Cycle & Pair with Switch 2
-1. Unplug USB.
-2. Slide the rear switch to **BT**, hold **Home** to power off if needed, then press **Home** (or **Home + Y** if you previously used 8BitDo BLE).
-3. On Switch 2, open **Controllers → Change Grip/Order**, hold the controller's **Pair** button until the LED flashes rapidly, and wait for it to pair.
-4. Once paired, pressing **Home** wakes the console and reconnects automatically.
+### 4. Power-Cycle & Pair
+1. Unplug USB and slide the rear switch to **BT**.
+2. Hold **Home** to power off if needed, then pick a slot:
+   - **Switch 2:** power on with **Home + Right** (or **Home + Y**), open **Controllers → Change Grip/Order** on Switch 2, and hold **Pair** until it pairs. *(If upgrading from an older version without universal slots, a one-time Switch 2 re-pair is needed because Switch 2 now uses its own slot MAC.)*
+   - **PC / Steam Deck (Stock 8BitDo):** power on with **Home + Up** or **Home + Down** (or **Home + B**), then hold **Pair**.
+   - **Apple / Xbox Elite BLE:** power on with **Home + Left** (or **Home + X**), then hold **Pair** (`8BitDo Ultimate 2 Xbox`).
+3. Once paired, pressing **Home** reconnects to the last-used slot (and wakes Switch 2), or **Home + D-pad** switches directly to any saved slot.
 
 ## Upgrading or Restoring Stock v1.10
 
@@ -99,10 +108,13 @@ Wait ~15–25 seconds until you see `SUCCESS: ... sector(s) flashed and verified
 Requires the Telink `tc32-elf-gcc` toolchain (on `PATH`, at `~/.local/opt/tc32/bin`, or via `TC32_BIN=/path/to/tc32/bin`) and a local copy of your stock v1.10 app (`backups/u2w-stock-v1.10.image.bin` or `u2w-1.10.dat`):
 
 ```bash
-# Run host unit tests (exercises C protocol, GATT, CSA #2, and PHY code directly)
+# Run host unit tests (exercises C protocol, GATT, CSA #2, PHY, and Elite code directly)
 cc -std=gnu99 -Wall -Wextra -Werror -DHOST_TEST \
     patches/csa2.c patches/s2_gatt.c patches/s2_proto.c patches/test_s2_proto.c -o /tmp/test_s2_proto
 /tmp/test_s2_proto
+cc -std=gnu99 -Wall -Wextra -Werror -DHOST_TEST \
+    patches/elite.c patches/test_elite.c -o /tmp/test_elite
+/tmp/test_elite
 python3 patches/test_csa2.py
 
 # Build patched image and regenerate dist/u2w-v1.10-switch2.patch.json
@@ -118,6 +130,7 @@ MIT — see [LICENSE](LICENSE).
 ## Credits & References
 
 ### 8BitDo Firmware, Bootloader & Flashing
+- [craigmdennis/8bitdo-ultimate-toolkit](https://github.com/craigmdennis/8bitdo-ultimate-toolkit/blob/u2w-xbox-rumble/u2w_xbox/README.md) — Xbox Elite Series 2 (`045e:0b05`) BLE identity, 39-byte HID report layout, paddle mapping, and Core Haptics / SDL rumble scaling reference
 - [Crazyawk/8bitdo-ultimate2c-macos-rumble](https://github.com/Crazyawk/8bitdo-ultimate2c-macos-rumble) — Field-tested Telink `0x3208` boot-mode backup and flashing protocol (HID report ID `5`, class-`05` read/erase/write/reset framing)
 - [ascendedent/8bitdo-Linux-Software](https://github.com/ascendedent/8bitdo-Linux-Software) — Ultimate 2 protocol framing, device IDs, and report-`81` / `0x0005` firmware notes
 - [crackheadakira/8BitDoRetroKeyboardFlasher](https://github.com/crackheadakira/8BitDoRetroKeyboardFlasher) — 8BitDo Telink HID firmware flashing precedent

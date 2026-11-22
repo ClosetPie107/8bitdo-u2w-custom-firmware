@@ -9,6 +9,11 @@ _hook_profile_leds:
     tjl     s2_profile_led_slot_hook
 #endif
 
+    .section .hook_bt_mac_init, "ax"
+    .global _hook_bt_mac_init
+_hook_bt_mac_init:
+    tjl     s2_bt_mac_init_hook
+
     .section .hook_ble_init, "ax"
     .global _hook_ble_init
 _hook_ble_init:
@@ -64,6 +69,9 @@ _hook_batt_notify:
 _hook_input_report:
     tjl     s2_input_report_hook
 
+    .section .hook_elite_notify, "ax"
+    tjl     elite_notify_hook
+
     .section .hook_conn_interval, "ax"
     .global _hook_conn_interval
 _hook_conn_interval:
@@ -91,6 +99,11 @@ s2_conn_interval:
     .global _hook_start_pairing
 _hook_start_pairing:
     tjl     s2_start_pairing_hook
+
+    .section .hook_pair_mac_inc, "ax"
+    .global _hook_pair_mac_inc
+_hook_pair_mac_inc:
+    tjl     stock_noop /* Per-slot Pair MAC bump is handled in s2_bt_mac_init_hook */
 
     .section .hook_ble_app_loop, "ax"
     .global _hook_ble_app_loop

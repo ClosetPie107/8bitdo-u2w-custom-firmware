@@ -2,6 +2,19 @@
 
 SECTIONS
 {
+    /* Reserve 160 bytes above the initial supervisor stack for the GAP/HID
+     * values that the shared stock ATT table reads in either HID mode. */
+    elite_map_ram = 0x00847f60;
+    elite_pnp_ram = elite_map_ram + 116;
+    elite_name_ram = elite_map_ram + 124;
+    .elite_stack_top 0x000000d4 : { LONG(elite_map_ram) }
+
+    .cave_elite 0x0001c75c : {
+        *elite.o(.text .text.*)
+        . = ALIGN(4);
+        *elite.o(.rodata .rodata.*)
+    }
+
     /* In relocated code: replace the profile LED index lookup for UART command 4. */
     . = 0x000007d4;
     .hook_profile_leds : { *(.hook_profile_leds) }
@@ -29,6 +42,8 @@ SECTIONS
     .hook_disconn : { *(.hook_disconn) }
 
     /* Cold BLE startup hooks (0xd558) */
+    . = 0x0000d570;
+    .hook_bt_mac_init : { *(.hook_bt_mac_init) }
     . = 0x0000d58e;
     .hook_ble_init : { *(.hook_ble_init) }
     . = 0x0000d59a;
@@ -58,6 +73,12 @@ SECTIONS
     . = 0x0000e174;
     .hook_start_pairing : { *(.hook_start_pairing) }
 
+    .hook_elite_notify 0x0000e460 : { *(.hook_elite_notify) }
+
+    /* Suppress global Pair MAC increment at 0xfab0 (replaced by per-slot mac_gen). */
+    . = 0x0000fab0;
+    .hook_pair_mac_inc : { *(.hook_pair_mac_inc) }
+
     /* CONNECT_IND interval guard (replaces two instructions at 0x15b5c). */
     . = 0x00015b5c;
     .hook_conn_interval : { *(.hook_conn_interval) }
@@ -65,6 +86,11 @@ SECTIONS
     /* Validated LL PHY control dispatch, after optional RX decryption. */
     . = 0x00016d0c;
     .hook_phy_update : { *(.hook_phy_update) }
+
+    .elite_name_ptr 0x0001b61c : { LONG(elite_name_ram) }
+    .elite_pnp_ptr 0x0001b724 : { LONG(elite_pnp_ram) }
+    .elite_rumble_ptr 0x0001b8f0 : { LONG(elite_rumble_hook + 1) }
+    .elite_map_ptr 0x0001b934 : { LONG(elite_map_ram) }
 
     /DISCARD/ : {
         *(.comment)

@@ -1,6 +1,7 @@
 #ifndef S2_STATE_H
 #define S2_STATE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /*
@@ -63,7 +64,13 @@ typedef struct {
 #endif
 } s2_state_t;
 
-typedef char s2_state_fits_in_ram[sizeof(s2_state_t) <= 111u ? 1 : -1];
+/* Exclude trailing alignment padding so clearing state leaves the latch alone. */
+#ifdef S2_BOND_DIAGNOSTICS
+#define S2_STATE_BYTES (offsetof(s2_state_t, bond_diagnostics) + 1u)
+#else
+#define S2_STATE_BYTES (offsetof(s2_state_t, pending_q) + sizeof(s2_pending_q_t))
+#endif
+typedef char s2_state_fits_in_ram[S2_STATE_BYTES <= 111u ? 1 : -1];
 
 #ifdef HOST_TEST
 extern s2_state_t g_s2_test_state;
@@ -105,8 +112,28 @@ typedef struct {
 #define PROP_WRITE          0x08u
 #define PROP_NOTIFY         0x10u
 
-/* Latched at BLE startup. hooks.s reads the same byte for CONNECT_IND validation. */
+/* Latched at BLE startup. hooks.s reads the same byte for CONNECT_IND validation.
+ * 0 = Switch 2 BLE; 1..4 = Stock 8BitDo BLE slots 0..3; 5..8 = Elite BLE slots 0..3. */
 #define S2_STOCK_BT (*(volatile uint8_t *)0x00845f77u)
+#define S2_BT_ELITE_LATCH     5u   /* >= 5: Stock BLE stack with Elite identity */
+
+#define S2_SLOT_MODE_S2       0u
+#define S2_SLOT_MODE_STOCK    1u
+#define S2_SLOT_MODE_ELITE    2u
+/* Default slot modes: Up=Stock(1), Down=Stock(1), Left=Elite(2), Right=Switch 2(0). */
+#define S2_DEFAULT_SLOT_MODES      0x25u
+/* Default last-used slot per mode: S2=Right(3), Stock=Up(0), Elite=Left(2). */
+#define S2_DEFAULT_LAST_MODE_SLOTS 0x23u
+
+static inline uint8_t s2_slot_mode_get(uint8_t slot_modes, uint8_t slot) {
+    uint8_t m = (uint8_t)((slot_modes >> ((slot & 3u) * 2u)) & 3u);
+    return m > S2_SLOT_MODE_ELITE ? S2_SLOT_MODE_STOCK : m;
+}
+
+static inline uint8_t s2_slot_mode_set(uint8_t slot_modes, uint8_t slot, uint8_t mode) {
+    uint8_t shift = (uint8_t)((slot & 3u) * 2u);
+    return (uint8_t)((slot_modes & (uint8_t)~(3u << shift)) | ((mode & 3u) << shift));
+}
 
 #define S2_BOND_VALID          0x01u
 #define S2_BOND_DIRTY          0x02u
@@ -120,11 +147,14 @@ typedef struct {
 #define S2_FLAG_PAIRING_OPEN   0x10u
 #define S2_FLAG_PENDING_VIB    0x20u
 
-/* Persisted mode flags in flash record byte 30 (version 3). */
+/* Persisted mode flags in flash record byte 30 (version 3 onward). */
 #define S2_CFG_BT_STOCK        0x01u /* 0 = Switch 2 BLE, 1 = 8BitDo BLE */
 #define S2_CFG_24G_SHIFT       1u
 #define S2_CFG_24G_MASK        0x06u /* 0 = XInput, 1 = DInput, 2 = Switch */
-#define S2_CFG_MODE_MASK       0x07u
+#define S2_CFG_BT_SLOT_SHIFT   3u
+#define S2_CFG_BT_SLOT_MASK    0x18u /* 0..3 = 8BitDo BLE slots Up/Down/Left/Right */
+#define S2_CFG_BT_ELITE        0x20u
+#define S2_CFG_MODE_MASK       0x3fu
 #define S2_CFG_HAS_BOND        0x80u /* 1 = ltk + host_addr in record are valid */
 
 #define S2_ADV_FORCE_DISCOVERY  0xffu
@@ -143,9 +173,25 @@ void s2_on_ble_disconnect(uint16_t tick, uint8_t pairing);
 void s2_startup_advertising(uint16_t tick, uint8_t pairing);
 void s2_pairing_advertising(uint16_t tick);
 void s2_service_ble(uint16_t tick, uint8_t connected, uint8_t encrypted, uint8_t pairing);
+typedef struct {
+    uint8_t cfg;
+    uint8_t slot_modes;
+    uint8_t s2_bond_mask;
+    uint8_t last_mode_slots;
+    uint8_t slot;
+    uint8_t mode;
+    uint8_t mac_gen;
+} s2_bt_boot_t;
+
 void s2_bond_load(void);
 uint8_t s2_cfg_load(void);
+void s2_cfg_load_bt(s2_bt_boot_t *b);
 void s2_cfg_save_flags(uint8_t flags);
+int  s2_cfg_save_bt(s2_bt_boot_t *b, uint8_t bump_mac);
+uint8_t s2_resolve_bt_boot(s2_bt_boot_t *b, uint8_t dpad, uint8_t face);
+void s2_erase_smp_slot(uint32_t addr);
+void s2_derive_slot_mac(uint8_t mac[6], uint8_t bt_slot, uint8_t mac_gen);
+void elite_gatt_init(void);
 #ifdef S2_BOND_DIAGNOSTICS
 void s2_save_bond_diagnostics(void);
 #endif

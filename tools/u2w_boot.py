@@ -60,10 +60,12 @@ CAVE_FLASH_END = 0x0D000
 # Authoritative Telink patch section layout shared by patches/build.py and apply_patch_file().
 PATCH_SECTIONS: list[tuple[str, int, int]] = [
     (".hook_profile_leds", 0x057D4, 4),
+    (".elite_stack_top", 0x050D4, 4),
     (".cave", CAVE_FLASH_START, CAVE_FLASH_END - CAVE_FLASH_START),
     (".hook_conn_mtu", 0x0D48A, 4),
     (".hook_conn_param", 0x0D496, 4),
     (".hook_disconn", 0x0D4EA, 4),
+    (".hook_bt_mac_init", 0x0D570, 4),
     (".hook_ble_init", 0x0D58E, 4),
     (".hook_gatt_init", 0x0D59A, 4),
     (".hook_smp_init", 0x0D5AA, 4),
@@ -75,8 +77,15 @@ PATCH_SECTIONS: list[tuple[str, int, int]] = [
     (".hook_ble_app_loop", 0x0D74C, 4),
     (".hook_24g_init", 0x0D9EC, 4),
     (".hook_start_pairing", 0x0E174, 4),
+    (".hook_elite_notify", 0x0E460, 4),
+    (".hook_pair_mac_inc", 0x0FAB0, 4),
     (".hook_conn_interval", 0x15B5C, 4),
     (".hook_phy_update", 0x16D0C, 4),
+    (".elite_name_ptr", 0x1B61C, 4),
+    (".elite_pnp_ptr", 0x1B724, 4),
+    (".elite_rumble_ptr", 0x1B8F0, 4),
+    (".elite_map_ptr", 0x1B934, 4),
+    (".cave_elite", 0x1C75C, 0x300),
 ]
 PATCH_SECTION_MAP: dict[str, tuple[int, int]] = {
     name: (addr, max_len) for name, addr, max_len in PATCH_SECTIONS
@@ -275,7 +284,7 @@ def apply_patch_file(stock: bytes, patch_path: Path) -> bytes:
                 raise ValueError(f"section {name} overlaps {prev_name}")
         placed_ranges.append((img_off, img_end, name))
 
-        if name == ".cave" and any(b != 0 for b in buf[img_off:img_end]):
+        if name in (".cave", ".cave_elite") and any(b != 0 for b in buf[img_off:img_end]):
             raise ValueError(f"cave at {flash_addr:#x} is not all zeros in stock")
         buf[img_off:img_end] = blob
 

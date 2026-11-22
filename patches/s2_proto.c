@@ -149,39 +149,39 @@ static void aes128_ecb_encrypt(const uint8_t key[16], const uint8_t in[16], uint
  * novakpetya/linux-switch2), with zeroed gyro bias for the U2W IMU.
  * ========================================================================= */
 
-static const uint8_t kFlash_013000[64] = {
+static const uint8_t kFlash_013000[37] = {
     0x01, 0x00, 0x48, 0x45, 0x4a, 0x37, 0x31, 0x30, 0x30, 0x31, 0x31, 0x32, 0x31, 0x32, 0x34, 0x37,
     0x00, 0x00, 0x7e, 0x05, 0x69, 0x20, 0x01, 0x06, 0x01, 0x23, 0x23, 0x23, 0xa0, 0xa0, 0xa0, 0xe6,
-    0xe6, 0xe6, 0x32, 0x32, 0x32, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xe6, 0xe6, 0x32, 0x32, 0x32,
 };
 /* Bytes 4..15 are 3 LE float32 gyro zero-bias values; zero them for U2W IMU. */
-static const uint8_t kFlash_013040[16] = {
-    0x3b, 0xe0, 0xd3, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-static const uint8_t kFlash_013080[64] = {
+static const uint8_t kFlash_013040[4] = { 0x3b, 0xe0, 0xd3, 0x41 };
+static const uint8_t kFlash_013080[49] = {
     0x01, 0xad, 0xd9, 0x9a, 0x55, 0x56, 0x65, 0xa0, 0x00, 0x0a, 0xa0, 0x00, 0x0a, 0xe2, 0x20, 0x0e,
     0xe2, 0x20, 0x0e, 0x9a, 0xad, 0xd9, 0x9a, 0xad, 0xd9, 0x0a, 0xa5, 0x50, 0x0a, 0xa5, 0x50, 0x2f,
     0xf6, 0x62, 0x2f, 0xf6, 0x62, 0x0a, 0xff, 0xff, 0xb3, 0x67, 0x83, 0x2e, 0x66, 0x5e, 0x3a, 0x06,
-    0x5f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0x5f,
 };
-static const uint8_t kFlash_0130C0[64] = {
-    0x01, 0xad, 0xd9, 0x9a, 0x55, 0x56, 0x65, 0xa0, 0x00, 0x0a, 0xa0, 0x00, 0x0a, 0xe2, 0x20, 0x0e,
-    0xe2, 0x20, 0x0e, 0x9a, 0xad, 0xd9, 0x9a, 0xad, 0xd9, 0x0a, 0xa5, 0x50, 0x0a, 0xa5, 0x50, 0x2f,
-    0xf6, 0x62, 0x2f, 0xf6, 0x62, 0x0a, 0xff, 0xff, 0x2c, 0x08, 0x84, 0xd1, 0x65, 0x63, 0x2a, 0x26,
-    0x62, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+/* 0x0130c0..0x0130e7 matches 0x013080..0x0130a7; only bytes 40..48 differ. */
+static const uint8_t kFlash_0130C0_tail[9] = {
+    0x2c, 0x08, 0x84, 0xd1, 0x65, 0x63, 0x2a, 0x26, 0x62,
 };
-static const uint8_t kFlash_013100[24] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+static const uint8_t kFlash_013100_tail[12] = {
     0xa6, 0xf2, 0x62, 0xbd, 0xa8, 0x00, 0x08, 0x3d, 0x2f, 0xed, 0x20, 0x41,
 };
 
 static uint8_t sim_flash_byte(uint32_t a) {
-    if (a >= 0x013000u && a < 0x013040u) return kFlash_013000[a - 0x013000u];
-    if (a >= 0x013040u && a < 0x013050u) return kFlash_013040[a - 0x013040u];
-    if (a >= 0x013080u && a < 0x0130c0u) return kFlash_013080[a - 0x013080u];
-    if (a >= 0x0130c0u && a < 0x013100u) return kFlash_0130C0[a - 0x0130c0u];
-    if (a >= 0x013100u && a < 0x013118u) return kFlash_013100[a - 0x013100u];
+    if (a >= 0x013000u && a < 0x013025u) return kFlash_013000[a - 0x013000u];
+    if (a >= 0x013040u && a < 0x013050u) return a < 0x013044u ? kFlash_013040[a - 0x013040u] : 0u;
+    if (a >= 0x013080u && a < 0x0130b1u) return kFlash_013080[a - 0x013080u];
+    if (a >= 0x0130c0u && a < 0x0130f1u) {
+        uint32_t off = a - 0x0130c0u;
+        return off < 40u ? kFlash_013080[off] : kFlash_0130C0_tail[off - 40u];
+    }
+    if (a >= 0x013100u && a < 0x013118u) {
+        uint32_t off = a - 0x013100u;
+        return off < 12u ? 0u : kFlash_013100_tail[off - 12u];
+    }
     return 0xffu;
 }
 
@@ -795,10 +795,44 @@ void s2_on_ble_connect(void) {
     s->flags &= (uint8_t)~S2_FLAG_BOND_ATTEMPTED;
 }
 
-/* Two sectors outside the application image and stock BLE bond area. */
+/* Two sectors outside the application image and stock BLE bond area.
+ * v6 record layout (108 bytes):
+ *   0..3:   "S2BD"
+ *   4..25:  Switch 2 bond for slot 3 (Right, same offset as v1..v5)
+ *   26:     version (6)
+ *   27:     generation
+ *   28..29: CRC-16
+ *   30:     mode flags (S2_CFG_*)
+ *   31:     0 (reserved)
+ *   32..37: mac_gen[0..5]
+ *   38:     slot_modes (2 bits/slot)
+ *   39:     s2_bond_mask (bits 0..3)
+ *   40:     last_mode_slots (2 bits/mode)
+ *   41:     0 (reserved)
+ *   42..63: Switch 2 bond for slot 0 (Up)
+ *   64..85: Switch 2 bond for slot 1 (Down)
+ *   86..107:Switch 2 bond for slot 2 (Left) */
 #define S2_BOND_SECTOR 0x0002b000u
 #define S2_BOND_BACKUP_SECTOR 0x0002c000u
-#define S2_BOND_RECORD_SIZE 32u
+#define S2_BOND_RECORD_SIZE 108u
+#define S2_MAC_GEN_OFF 32u
+#define S2_MAC_GEN_COUNT 6u
+#define S2_SLOT_MODES_OFF 38u
+#define S2_BOND_MASK_OFF 39u
+#define S2_LAST_SLOTS_OFF 40u
+
+static unsigned s2_rec_mac_count(uint8_t version) {
+    return version == 4u ? 5u : (version >= 5u ? S2_MAC_GEN_COUNT : 0u);
+}
+
+static unsigned s2_rec_crc_extra_len(uint8_t version) {
+    return version >= 6u ? (S2_BOND_RECORD_SIZE - S2_MAC_GEN_OFF) : s2_rec_mac_count(version);
+}
+
+static unsigned s2_slot_bond_off(uint8_t slot) {
+    slot &= 3u;
+    return slot == 3u ? 4u : (42u + (unsigned)slot * 22u);
+}
 
 static uint8_t s2_bond_checksum(const uint8_t rec[32]) {
     uint8_t x = 0xa5u;
@@ -834,8 +868,10 @@ static int s2_flash_program(uint32_t addr, uint32_t len, const uint8_t *buf,
      * and restore protection if it was enabled on entry. */
     uint8_t was_protected = *(volatile uint8_t *)0x00845facu;
     if (was_protected) stock_flash_enable_writes();
-    if (erase_sector) stock_flash_erase_sector(addr);
-    f_write(addr, len, buf);
+    for (uint8_t i = 0; i < erase_sector; i++) {
+        stock_flash_erase_sector(addr + ((uint32_t)i << 12));
+    }
+    if (len) f_write(addr, len, buf);
     if (was_protected) stock_flash_protect();
 #endif
     return 1;
@@ -861,19 +897,24 @@ void s2_save_bond_diagnostics(void) {
 }
 #endif
 
+static uint16_t s2_crc16_byte(uint16_t crc, uint8_t b) {
+    crc ^= (uint16_t)b << 8;
+    for (unsigned bit = 0; bit < 8u; bit++) {
+        crc = (crc & 0x8000u) ? (uint16_t)(((uint32_t)crc << 1) ^ 0x1021u) : (uint16_t)(crc << 1);
+    }
+    return crc;
+}
+
 static uint16_t s2_bond_crc(const uint8_t *rec) {
     uint16_t crc = 0xffffu;
     for (unsigned i = 0; i < 28u; i++) {
-        crc ^= (uint16_t)rec[i] << 8;
-        for (unsigned bit = 0; bit < 8u; bit++) {
-            crc = (crc & 0x8000u) ? ((uint32_t)crc << 1) ^ 0x1021u : (uint32_t)crc << 1;
-        }
+        crc = s2_crc16_byte(crc, rec[i]);
     }
-    if (rec[26] == 3u) {
-        crc ^= (uint16_t)rec[30] << 8;
-        for (unsigned bit = 0; bit < 8u; bit++) {
-            crc = (crc & 0x8000u) ? ((uint32_t)crc << 1) ^ 0x1021u : (uint32_t)crc << 1;
-        }
+    if (rec[26] >= 3u) {
+        crc = s2_crc16_byte(crc, rec[30]);
+    }
+    for (unsigned i = 0; i < s2_rec_crc_extra_len(rec[26]); i++) {
+        crc = s2_crc16_byte(crc, rec[S2_MAC_GEN_OFF + i]);
     }
     return crc;
 }
@@ -886,7 +927,7 @@ static int s2_bond_valid(const uint8_t *rec) {
         return rec[27] == s2_bond_checksum(rec);
     }
     uint16_t crc = (uint16_t)rec[28] | ((uint16_t)rec[29] << 8);
-    return (rec[26] == 2u || rec[26] == 3u) && rec[31] == 0u && crc == s2_bond_crc(rec);
+    return (rec[26] >= 2u && rec[26] <= 6u) && rec[31] == 0u && crc == s2_bond_crc(rec);
 }
 
 static uint8_t s2_bond_generation(const uint8_t *rec) {
@@ -898,7 +939,15 @@ static uint8_t s2_rec_has_bond(const uint8_t *rec) {
 }
 
 static uint8_t s2_rec_mode_flags(const uint8_t *rec) {
-    return rec[26] == 3u ? (uint8_t)(rec[30] & S2_CFG_MODE_MASK) : 0u;
+    if (rec[26] < 3u) return 0u;
+    return rec[30] & (rec[26] < 5u ? (S2_CFG_MODE_MASK & ~S2_CFG_BT_ELITE) : S2_CFG_MODE_MASK);
+}
+
+static uint8_t s2_rec_mac_gen(const uint8_t *rec, uint8_t slot) {
+    if (slot < s2_rec_mac_count(rec[26])) {
+        return rec[S2_MAC_GEN_OFF + slot];
+    }
+    return 0u;
 }
 
 static uint32_t s2_bond_latest(uint8_t *rec) {
@@ -915,29 +964,75 @@ static uint32_t s2_bond_latest(uint8_t *rec) {
     return primary_ok ? S2_BOND_SECTOR : 0u;
 }
 
-uint8_t s2_cfg_load(void) {
+static void s2_rec_decode(const uint8_t *rec, int has_rec, s2_bt_boot_t *b) {
+    uint8_t flags = has_rec ? s2_rec_mode_flags(rec) : 0u;
+    uint8_t slot_modes = S2_DEFAULT_SLOT_MODES;
+    uint8_t bond_mask = 0u;
+    uint8_t last_slots = S2_DEFAULT_LAST_MODE_SLOTS;
+
+    if (has_rec) {
+        if (rec[26] >= 6u) {
+            slot_modes = rec[S2_SLOT_MODES_OFF];
+            bond_mask = rec[S2_BOND_MASK_OFF] & 0x0fu;
+            last_slots = rec[S2_LAST_SLOTS_OFF];
+        } else {
+            if (s2_rec_has_bond(rec)) bond_mask = (1u << 3);
+            uint8_t bt_mode = flags & (S2_CFG_BT_STOCK | S2_CFG_BT_ELITE);
+            uint8_t slot = (uint8_t)((flags & S2_CFG_BT_SLOT_MASK) >> S2_CFG_BT_SLOT_SHIFT);
+            if (bt_mode == 0u) {
+                slot = 3u;
+            } else if (bt_mode == S2_CFG_BT_ELITE) {
+                slot = 2u;
+            } else {
+                slot_modes = s2_slot_mode_set(slot_modes, slot, S2_SLOT_MODE_STOCK);
+                last_slots = s2_slot_mode_set(last_slots, S2_SLOT_MODE_STOCK, slot);
+            }
+            flags = (uint8_t)((flags & (uint8_t)~S2_CFG_BT_SLOT_MASK)
+                              | (uint8_t)((slot << S2_CFG_BT_SLOT_SHIFT) & S2_CFG_BT_SLOT_MASK));
+        }
+    }
+
+    b->cfg = flags;
+    b->slot_modes = slot_modes;
+    b->s2_bond_mask = bond_mask;
+    b->last_mode_slots = last_slots;
+    b->slot = (uint8_t)((flags & S2_CFG_BT_SLOT_MASK) >> S2_CFG_BT_SLOT_SHIFT);
+    b->mode = s2_slot_mode_get(slot_modes, b->slot);
+    b->mac_gen = has_rec ? s2_rec_mac_gen(rec, b->slot) : 0u;
+}
+
+void s2_cfg_load_bt(s2_bt_boot_t *b) {
     uint8_t rec[S2_BOND_RECORD_SIZE];
-    if (!s2_bond_latest(rec)) return 0u;
-    return s2_rec_mode_flags(rec);
+    s2_rec_decode(rec, s2_bond_latest(rec) != 0u, b);
+}
+
+uint8_t s2_cfg_load(void) {
+    s2_bt_boot_t b;
+    s2_cfg_load_bt(&b);
+    return b.cfg;
 }
 
 void s2_bond_load(void) {
     s2_state_t *s = S2_STATE;
     uint8_t rec[S2_BOND_RECORD_SIZE];
-    if (s2_bond_latest(rec) && s2_rec_has_bond(rec)) {
-        for (unsigned i = 0; i < sizeof(s->ltk); i++) s->ltk[i] = rec[4 + i];
-        for (unsigned i = 0; i < sizeof(s->host_addr); i++) s->host_addr[i] = rec[20 + i];
-        s->have_ltk = S2_BOND_VALID;
-    }
+    if (!s2_bond_latest(rec)) return;
+    s2_bt_boot_t b;
+    s2_rec_decode(rec, 1, &b);
+    if ((b.s2_bond_mask & (uint8_t)(1u << b.slot)) == 0u) return;
+    unsigned off = s2_slot_bond_off(b.slot);
+    for (unsigned i = 0; i < sizeof(s->ltk); i++) s->ltk[i] = rec[off + i];
+    for (unsigned i = 0; i < sizeof(s->host_addr); i++) s->host_addr[i] = rec[off + 16u + i];
+    s->have_ltk = S2_BOND_VALID;
 }
 
-static int s2_bond_same(const uint8_t *rec, const s2_state_t *s) {
-    if (!s2_rec_has_bond(rec)) return 0;
+static int s2_bond_same(const uint8_t *rec, const s2_bt_boot_t *b, const s2_state_t *s) {
+    if ((b->s2_bond_mask & (uint8_t)(1u << b->slot)) == 0u) return 0;
+    unsigned off = s2_slot_bond_off(b->slot);
     for (unsigned i = 0; i < sizeof(s->ltk); i++) {
-        if (rec[4 + i] != s->ltk[i]) return 0;
+        if (rec[off + i] != s->ltk[i]) return 0;
     }
     for (unsigned i = 0; i < sizeof(s->host_addr); i++) {
-        if (rec[20 + i] != s->host_addr[i]) return 0;
+        if (rec[off + 16u + i] != s->host_addr[i]) return 0;
     }
     return 1;
 }
@@ -962,55 +1057,152 @@ static int s2_flash_commit_record(uint32_t latest, uint8_t rec[S2_BOND_RECORD_SI
     return 1;
 }
 
-void s2_cfg_save_flags(uint8_t flags) {
-    flags &= S2_CFG_MODE_MASK;
+static int s2_record_commit(uint32_t latest, const uint8_t *cur, uint8_t rec[S2_BOND_RECORD_SIZE],
+                            const s2_bt_boot_t *b, uint8_t bump_mac) {
+    rec[0] = 'S'; rec[1] = '2'; rec[2] = 'B'; rec[3] = 'D';
+    for (unsigned i = 0; i < S2_MAC_GEN_COUNT; i++) {
+        rec[S2_MAC_GEN_OFF + i] = latest ? s2_rec_mac_gen(cur, (uint8_t)i) : 0u;
+    }
+    if (bump_mac && b->slot < S2_MAC_GEN_COUNT) {
+        rec[S2_MAC_GEN_OFF + b->slot] = b->mac_gen;
+    }
+    rec[S2_SLOT_MODES_OFF] = b->slot_modes;
+    rec[S2_BOND_MASK_OFF] = b->s2_bond_mask & 0x0fu;
+    rec[S2_LAST_SLOTS_OFF] = b->last_mode_slots;
+    rec[26] = 6u;
+    rec[27] = latest ? (uint8_t)(s2_bond_generation(cur) + 1u) : 0u;
+    rec[30] = (uint8_t)((b->cfg & S2_CFG_MODE_MASK) | ((b->s2_bond_mask & (1u << 3)) ? S2_CFG_HAS_BOND : 0u));
+    uint16_t crc = s2_bond_crc(rec);
+    rec[28] = (uint8_t)crc;
+    rec[29] = (uint8_t)(crc >> 8);
+    return s2_flash_commit_record(latest, rec);
+}
+
+static void s2_copy_bonds_from_cur(uint8_t rec[S2_BOND_RECORD_SIZE], uint32_t latest,
+                                   const uint8_t *cur, uint8_t bond_mask) {
+    if (!latest) return;
+    for (uint8_t s = 0u; s < 4u; s++) {
+        if ((bond_mask & (uint8_t)(1u << s)) && (s == 3u || cur[26] >= 6u)) {
+            unsigned off = s2_slot_bond_off(s);
+            for (unsigned i = 0u; i < 22u; i++) rec[off + i] = cur[off + i];
+        }
+    }
+}
+
+int s2_cfg_save_bt(s2_bt_boot_t *b, uint8_t bump_mac) {
     uint8_t cur[S2_BOND_RECORD_SIZE];
     uint32_t latest = s2_bond_latest(cur);
-    if (latest && s2_rec_mode_flags(cur) == flags) {
-        return;
+    uint8_t gen = latest ? s2_rec_mac_gen(cur, b->slot) : 0u;
+    if (bump_mac && b->slot < S2_MAC_GEN_COUNT) {
+        gen = (uint8_t)(gen + 1u);
+    }
+    b->mac_gen = gen;
+    uint8_t flags = b->cfg & S2_CFG_MODE_MASK;
+    uint8_t mask = b->s2_bond_mask & 0x0fu;
+    if (!bump_mac && latest && cur[26] >= 6u &&
+        s2_rec_mode_flags(cur) == flags && cur[S2_SLOT_MODES_OFF] == b->slot_modes &&
+        (cur[S2_BOND_MASK_OFF] & 0x0fu) == mask && cur[S2_LAST_SLOTS_OFF] == b->last_mode_slots) {
+        return 1;
     }
 
     uint8_t rec[S2_BOND_RECORD_SIZE];
     for (unsigned i = 0; i < sizeof(rec); i++) rec[i] = 0u;
-    rec[0] = 'S'; rec[1] = '2'; rec[2] = 'B'; rec[3] = 'D';
-    if (latest && s2_rec_has_bond(cur)) {
-        for (unsigned i = 4; i < 26u; i++) rec[i] = cur[i];
-        flags |= S2_CFG_HAS_BOND;
+    s2_copy_bonds_from_cur(rec, latest, cur, mask);
+    return s2_record_commit(latest, cur, rec, b, bump_mac);
+}
+
+void s2_cfg_save_flags(uint8_t flags) {
+    s2_bt_boot_t b;
+    s2_cfg_load_bt(&b);
+    b.cfg = flags & S2_CFG_MODE_MASK;
+    b.slot = (uint8_t)((b.cfg & S2_CFG_BT_SLOT_MASK) >> S2_CFG_BT_SLOT_SHIFT);
+    (void)s2_cfg_save_bt(&b, 0u);
+}
+
+uint8_t s2_resolve_bt_boot(s2_bt_boot_t *b, uint8_t dpad, uint8_t face) {
+    uint8_t slot = (uint8_t)((b->cfg & S2_CFG_BT_SLOT_MASK) >> S2_CFG_BT_SLOT_SHIFT);
+    uint8_t slot_modes = b->slot_modes;
+    uint8_t mode = s2_slot_mode_get(slot_modes, slot);
+    uint8_t mode_changed = 0u;
+
+    if (dpad < 4u) {
+        slot = dpad;
+        mode = s2_slot_mode_get(slot_modes, slot);
+        if (face <= S2_SLOT_MODE_ELITE && face != mode) {
+            mode = face;
+            slot_modes = s2_slot_mode_set(slot_modes, slot, mode);
+            mode_changed = 1u;
+        }
+    } else if (face <= S2_SLOT_MODE_ELITE && mode != face) {
+        uint8_t pref = (uint8_t)((b->last_mode_slots >> (face * 2u)) & 3u);
+        if (s2_slot_mode_get(slot_modes, pref) == face) {
+            slot = pref;
+        } else {
+            uint8_t i = 0u;
+            for (; i < 4u; i++) {
+                if (s2_slot_mode_get(slot_modes, i) == face) {
+                    slot = i;
+                    break;
+                }
+            }
+            if (i == 4u) {
+                slot_modes = s2_slot_mode_set(slot_modes, slot, face);
+                mode_changed = 1u;
+            }
+        }
+        mode = face;
     }
-    rec[26] = 3u;
-    rec[27] = latest ? (uint8_t)(s2_bond_generation(cur) + 1u) : 0u;
-    rec[30] = flags;
-    uint16_t crc = s2_bond_crc(rec);
-    rec[28] = (uint8_t)crc;
-    rec[29] = (uint8_t)(crc >> 8);
-    s2_flash_commit_record(latest, rec);
+
+    uint8_t bt_bits = mode == S2_SLOT_MODE_STOCK ? S2_CFG_BT_STOCK
+                    : (mode == S2_SLOT_MODE_ELITE ? S2_CFG_BT_ELITE : 0u);
+    b->cfg = (uint8_t)((b->cfg & (uint8_t)~(S2_CFG_BT_STOCK | S2_CFG_BT_ELITE | S2_CFG_BT_SLOT_MASK))
+                       | bt_bits
+                       | (uint8_t)((slot << S2_CFG_BT_SLOT_SHIFT) & S2_CFG_BT_SLOT_MASK));
+    b->slot_modes = slot_modes;
+    b->last_mode_slots = s2_slot_mode_set(b->last_mode_slots, mode, slot);
+    b->slot = slot;
+    b->mode = mode;
+    return mode_changed;
+}
+
+void s2_erase_smp_slot(uint32_t addr) {
+#ifdef HOST_TEST
+    (void)addr;
+#else
+    (void)s2_flash_program(addr, 0u, 0, 2u);
+#endif
+}
+
+void s2_derive_slot_mac(uint8_t mac[6], uint8_t bt_slot, uint8_t mac_gen) {
+    mac[0] = (uint8_t)(mac[0] + mac_gen);
+    if (bt_slot > 0u && bt_slot < 4u) {
+        mac[1] ^= (uint8_t)(bt_slot << 4);
+    }
 }
 
 static void s2_bond_save(void) {
     s2_state_t *s = S2_STATE;
     uint8_t cur[S2_BOND_RECORD_SIZE];
     uint32_t latest = s2_bond_latest(cur);
-    if (latest && s2_bond_same(cur, s)) {
+    s2_bt_boot_t b;
+    s2_rec_decode(cur, latest != 0u, &b);
+    if (latest && cur[26] >= 6u && s2_bond_same(cur, &b, s)) {
         s->have_ltk = S2_BOND_VALID;
         return;
     }
 
     uint8_t rec[S2_BOND_RECORD_SIZE];
     for (unsigned i = 0; i < sizeof(rec); i++) rec[i] = 0u;
-    rec[0] = 'S'; rec[1] = '2'; rec[2] = 'B'; rec[3] = 'D';
-    for (unsigned i = 0; i < sizeof(s->ltk); i++) rec[4 + i] = s->ltk[i];
-    for (unsigned i = 0; i < sizeof(s->host_addr); i++) rec[20 + i] = s->host_addr[i];
-    rec[26] = 3u;
-    rec[27] = latest ? (uint8_t)(s2_bond_generation(cur) + 1u) : 0u;
-    rec[30] = (uint8_t)((latest ? s2_rec_mode_flags(cur) : 0u) | S2_CFG_HAS_BOND);
-    uint16_t crc = s2_bond_crc(rec);
-    rec[28] = (uint8_t)crc;
-    rec[29] = (uint8_t)(crc >> 8);
+    s2_copy_bonds_from_cur(rec, latest, cur, b.s2_bond_mask);
+    unsigned off = s2_slot_bond_off(b.slot);
+    for (unsigned i = 0; i < sizeof(s->ltk); i++) rec[off + i] = s->ltk[i];
+    for (unsigned i = 0; i < sizeof(s->host_addr); i++) rec[off + 16u + i] = s->host_addr[i];
+    b.s2_bond_mask |= (uint8_t)(1u << b.slot);
 
 #ifdef S2_BOND_DIAGNOSTICS
     s->bond_diagnostics |= 0x20u;  /* Reached the flash programming call. */
 #endif
-    if (!s2_flash_commit_record(latest, rec)) return;
+    if (!s2_record_commit(latest, cur, rec, &b, 0u)) return;
     s->have_ltk = S2_BOND_VALID;
 #ifdef S2_BOND_DIAGNOSTICS
     s->bond_diagnostics |= 0x40u;  /* Readback matched. */
@@ -1089,14 +1281,7 @@ void s2_on_ble_disconnect(uint16_t tick, uint8_t pairing) {
     s2_stop_rumble();
     s->enabled_features = 0u;
     s->feature_mask = 0u;
-    s->cccd_common[0] = 0u; s->cccd_common[1] = 0u;
-    s->cccd_pro2[0]   = 0u; s->cccd_pro2[1]   = 0u;
-    s->cccd_resp1[0]  = 0u; s->cccd_resp1[1]  = 0u;
-    s->cccd_resp2[0]  = 0u; s->cccd_resp2[1]  = 0u;
-    s->cccd_unk1[0]   = 0u; s->cccd_unk1[1]   = 0u;
-    s->cccd_unk2[0]   = 0u; s->cccd_unk2[1]   = 0u;
-    s->cccd_aud[0]    = 0u; s->cccd_aud[1]    = 0u;
-    s->cccd_svc[0]    = 0u; s->cccd_svc[1]    = 0u;
+    for (unsigned i = 0; i < 16u; i++) (&s->cccd_common[0])[i] = 0u;
     s->pairing_stage = 0u;
     s->scratch.imu.valid = 0u;
     s->pending_rsp_valid = 0u;
@@ -1141,12 +1326,12 @@ static void s2_pack_motion(uint8_t rep[63]) {
 
     /* Rotate U2W IMU frame (+X=USB, +Y=Left, +Z=Up, ±8g, ±2000 dps) into
      * Switch 2 Pro 2 native frame (+X=Right, +Y=USB, +Z=Up, ±8g, ±500 dps). */
-    int32_t ax = s2_clamp_i32(-(int32_t)u_ay, -8192, 8191);
-    int32_t ay = s2_clamp_i32((int32_t)u_ax, -8192, 8191);
-    int32_t az = s2_clamp_i32((int32_t)u_az, -8192, 8191);
-    int32_t gx = s2_clamp_i32(-(int32_t)u_gy * 2, -16384, 16383);
-    int32_t gy = s2_clamp_i32((int32_t)u_gx * 2, -16384, 16383);
-    int32_t gz = s2_clamp_i32((int32_t)u_gz * 2, -16384, 16383);
+    int32_t accel[3] = { -(int32_t)u_ay, (int32_t)u_ax, (int32_t)u_az };
+    int32_t gyro[3]  = { -(int32_t)u_gy * 2, (int32_t)u_gx * 2, (int32_t)u_gz * 2 };
+    for (unsigned i = 0; i < 3u; i++) {
+        accel[i] = s2_clamp_i32(accel[i], -8192, 8191);
+        gyro[i]  = s2_clamp_i32(gyro[i], -16384, 16383);
+    }
 
     uint32_t tick = CALL_GET_TICK();
     uint16_t tick16 = (uint16_t)(tick >> 10); /* 15625 Hz (64 us/tick), wraps cleanly at 2^32 */
@@ -1181,9 +1366,9 @@ static void s2_pack_motion(uint8_t rep[63]) {
 
         /* Integrate Q20 unit quaternion q = [w, x, y, z] using 32-bit math only.
          * 0.5 * (rad(500)/16384) * (1/15625) * 2^20 = 0.017872 ≈ 146 / 8192. */
-        int32_t hx = s2_clamp_i32((((gx * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
-        int32_t hy = s2_clamp_i32((((gy * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
-        int32_t hz = s2_clamp_i32((((gz * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
+        int32_t hx = s2_clamp_i32((((gyro[0] * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
+        int32_t hy = s2_clamp_i32((((gyro[1] * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
+        int32_t hz = s2_clamp_i32((((gyro[2] * 146) >> 3) * (int32_t)dt_ticks) >> 10, -32767, 32767);
 
         int32_t w = s->scratch.imu.q[0];
         int32_t x = s->scratch.imu.q[1];
@@ -1243,32 +1428,32 @@ static void s2_pack_motion(uint8_t rep[63]) {
     }
 
     /* A0 (s14), G2 (s15), A1 (s13 x 2), G3 (s15), A2 (s14) */
-    s2_put_bits(rep, 220u, 14u, (uint32_t)ax);
-    s2_put_bits(rep, 234u, 14u, (uint32_t)ay);
-    s2_put_bits(rep, 248u, 14u, (uint32_t)az);
-
-    s2_put_bits(rep, 263u, 15u, (uint32_t)gx);
-    s2_put_bits(rep, 279u, 15u, (uint32_t)gy);
-    s2_put_bits(rep, 295u, 15u, (uint32_t)gz);
-
-    s2_put_bits(rep, 310u, 13u, (uint32_t)(ax >> 1));
-    s2_put_bits(rep, 323u, 13u, (uint32_t)(ay >> 1));
-    s2_put_bits(rep, 336u, 13u, (uint32_t)(az >> 1));
-
-    s2_put_bits(rep, 350u, 15u, (uint32_t)gx);
-    s2_put_bits(rep, 366u, 15u, (uint32_t)gy);
-    s2_put_bits(rep, 382u, 15u, (uint32_t)gz);
-
-    s2_put_bits(rep, 397u, 14u, (uint32_t)ax);
-    s2_put_bits(rep, 411u, 14u, (uint32_t)ay);
-    s2_put_bits(rep, 425u, 14u, (uint32_t)az);
+    static const struct { uint16_t start; uint8_t stride; uint8_t width; uint8_t src; } kMotion[] = {
+        { 220u, 14u, 14u, 0u }, /* A0 */
+        { 263u, 16u, 15u, 1u }, /* G2 */
+        { 310u, 13u, 13u, 2u }, /* A1 (a >> 1) */
+        { 350u, 16u, 15u, 1u }, /* G3 */
+        { 397u, 14u, 14u, 0u }, /* A2 */
+    };
+    for (unsigned m = 0; m < 5u; m++) {
+        for (unsigned k = 0; k < 3u; k++) {
+            int32_t v = kMotion[m].src == 1u ? gyro[k]
+                      : (kMotion[m].src == 2u ? (accel[k] >> 1) : accel[k]);
+            s2_put_bits(rep, (unsigned)kMotion[m].start + k * kMotion[m].stride,
+                        kMotion[m].width, (uint32_t)v);
+        }
+    }
 }
 
 /* =========================================================================
  * 63-byte Pro Controller 2 input report (0x09 on handle 0x000e)
  * ========================================================================= */
 
-static void pack_u12_stick(uint8_t *dst, uint16_t xv, uint16_t yv) {
+static void pack_stick_word(uint8_t *dst, uint32_t raw) {
+    uint8_t x8 = (uint8_t)(255u - ((raw >> 8) & 0xffu));
+    uint8_t y8 = (uint8_t)(255u - ((raw >> 24) & 0xffu));
+    uint16_t xv = (uint16_t)(((uint16_t)x8 << 4) | (x8 >> 4));
+    uint16_t yv = (uint16_t)(((uint16_t)y8 << 4) | (y8 >> 4));
     dst[0] = (uint8_t)(xv & 0xffu);
     dst[1] = (uint8_t)(((yv & 0x0fu) << 4) | ((xv >> 8) & 0x0fu));
     dst[2] = (uint8_t)((yv >> 4) & 0xffu);
@@ -1321,60 +1506,23 @@ int s2_send_input_report(void) {
      *   rep[3]: 0x80 LStick 0x40 Minus 0x20 ZL 0x10 L 0x08 Up 0x04 Left 0x02 Right 0x01 Down
      *   rep[4]: 0x10 C 0x08 GL 0x04 GR 0x02 Capture 0x01 Home
      */
-    uint8_t b2 = 0u, b3 = 0u, b4 = 0u;
+    static const struct { uint8_t bit; uint8_t idx; uint8_t mask; } kBtnMap[] = {
+        { 12u, 2u, 0x02u }, { 13u, 2u, 0x01u }, {  5u, 2u, 0x08u }, {  4u, 2u, 0x04u }, /* A B X Y */
+        { 11u, 2u, 0x10u }, { 15u, 2u, 0x20u }, {  0u, 2u, 0x40u }, {  2u, 2u, 0x80u }, /* R ZR + R3 */
+        { 10u, 3u, 0x10u }, { 14u, 3u, 0x20u }, {  3u, 3u, 0x40u }, {  1u, 3u, 0x80u }, /* L ZL - L3 */
+        {  9u, 3u, 0x08u }, {  8u, 3u, 0x01u }, {  7u, 3u, 0x04u }, {  6u, 3u, 0x02u }, /* U D L R */
+        { 17u, 4u, 0x01u }, { 16u, 4u, 0x02u }, { 26u, 4u, 0x08u }, { 25u, 4u, 0x04u }, /* Home Cap GL GR */
+    };
+    for (unsigned i = 0; i < sizeof(kBtnMap) / sizeof(kBtnMap[0]); i++) {
+        if (btn & (1u << kBtnMap[i].bit)) rep[kBtnMap[i].idx] |= kBtnMap[i].mask;
+    }
+    if ((trig >> 8) > 0x4du)   rep[2] |= 0x20u; /* Analog ZR */
+    if ((trig & 0xffu) > 0x4du) rep[3] |= 0x20u; /* Analog ZL */
+    if (raw_btn & (1u << 27))  rep[4] |= 0x02u; /* Physical Square (Turbo) -> Capture */
 
-    /* Face buttons (M2 positional: East=A, South=B, North=X, West=Y) */
-    if (btn & (1u << 12)) b2 |= 0x02u; /* A (East / Xbox B) */
-    if (btn & (1u << 13)) b2 |= 0x01u; /* B (South / Xbox A) */
-    if (btn & (1u << 5))  b2 |= 0x08u; /* X (North / Xbox Y) */
-    if (btn & (1u << 4))  b2 |= 0x04u; /* Y (West / Xbox X) */
-
-    /* Shoulders, triggers (H4: high byte=ZR/Accel, low byte=ZL/Brake), Plus/Minus, Stick clicks */
-    if (btn & (1u << 11)) b2 |= 0x10u; /* R */
-    if ((btn & (1u << 15)) || ((trig >> 8) > 0x4du))   b2 |= 0x20u; /* ZR */
-    if (btn & (1u << 0))  b2 |= 0x40u; /* Plus */
-    if (btn & (1u << 2))  b2 |= 0x80u; /* RStick */
-
-    if (btn & (1u << 10)) b3 |= 0x10u; /* L */
-    if ((btn & (1u << 14)) || ((trig & 0xffu) > 0x4du)) b3 |= 0x20u; /* ZL */
-    if (btn & (1u << 3))  b3 |= 0x40u; /* Minus */
-    if (btn & (1u << 1))  b3 |= 0x80u; /* LStick */
-
-    /* D-pad (H2 verified from 0xe344..0xe49c: 9=Up, 6=Right, 8=Down, 7=Left) */
-    if (btn & (1u << 9))  b3 |= 0x08u; /* Up */
-    if (btn & (1u << 8))  b3 |= 0x01u; /* Down */
-    if (btn & (1u << 7))  b3 |= 0x04u; /* Left */
-    if (btn & (1u << 6))  b3 |= 0x02u; /* Right */
-
-    /* System and grip buttons. P2 is the left paddle on the Ultimate 2 Wireless.
-     * The physical Square (Turbo) button is bit 27 in raw matrix 0x845fe8 and is
-     * stripped by stock Turbo processing before 0x846d44; map it to Capture. */
-    if (btn & (1u << 17)) b4 |= 0x01u; /* Home */
-    if ((btn & (1u << 16)) || (raw_btn & (1u << 27))) b4 |= 0x02u; /* Capture (Share / Square) */
-    if (btn & (1u << 26)) b4 |= 0x08u; /* GL (P2) */
-    if (btn & (1u << 25)) b4 |= 0x04u; /* GR (P1) */
-
-    rep[2] = b2;
-    rep[3] = b3;
-    rep[4] = b4;
-
-    /*
-     * Sticks (H3 verified from 0xe396..0xe3c4):
-     *   X = byte 1 ((w >> 8) & 0xff), inverted (255 - x)
-     *   Y = byte 3 ((w >> 24) & 0xff), inverted for Switch up=+Y (255 - y)
-     */
-    uint8_t lx8 = (uint8_t)(255u - ((ls >> 8) & 0xffu));
-    uint8_t ly8 = (uint8_t)(255u - ((ls >> 24) & 0xffu));
-    uint8_t rx8 = (uint8_t)(255u - ((rs >> 8) & 0xffu));
-    uint8_t ry8 = (uint8_t)(255u - ((rs >> 24) & 0xffu));
-
-    uint16_t lx12 = (uint16_t)(((uint16_t)lx8 << 4) | (lx8 >> 4));
-    uint16_t ly12 = (uint16_t)(((uint16_t)ly8 << 4) | (ly8 >> 4));
-    uint16_t rx12 = (uint16_t)(((uint16_t)rx8 << 4) | (rx8 >> 4));
-    uint16_t ry12 = (uint16_t)(((uint16_t)ry8 << 4) | (ry8 >> 4));
-
-    pack_u12_stick(&rep[5], lx12, ly12);
-    pack_u12_stick(&rep[8], rx12, ry12);
+    /* Sticks (H3: X=byte 1 inv, Y=byte 3 inv for Switch up=+Y) */
+    pack_stick_word(&rep[5], ls);
+    pack_stick_word(&rep[8], rs);
 
     /* Feature status byte at 0x0b: 0x30 (or 0x38 if rumble bit 0x20 enabled) */
     rep[0x0b] = (s->enabled_features & S2_FEATURE_RUMBLE) ? 0x38u : 0x30u;

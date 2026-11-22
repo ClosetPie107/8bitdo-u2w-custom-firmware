@@ -25,7 +25,16 @@ from u2w_boot import (  # noqa: E402
     validate_and_fix_image,
 )
 
-RELOCATED_SECTIONS = {".hook_profile_leds": 0x07D4}
+RELOCATED_SECTIONS = {".hook_profile_leds": 0x07D4, ".elite_stack_top": 0x00D4}
+
+ELITE_HOOK_STOCK = {
+    ".elite_stack_top": "00 80 84 00",
+    ".hook_elite_notify": "0a 90 36 9a",
+    ".elite_name_ptr": "68 b4 01 00",
+    ".elite_pnp_ptr": "4c b5 01 00",
+    ".elite_rumble_ptr": "35 d5 00 00",
+    ".elite_map_ptr": "d8 b4 01 00",
+}
 
 STOCK_SYMS = {
     "stock_ll_init_slave": 0x161BC,
@@ -48,12 +57,17 @@ STOCK_SYMS = {
     "stock_conn_param_update": 0x18CAC,
     "stock_batt_notify": 0x0E1CC,
     "stock_start_pairing": 0x0FC0C,
+    "stock_noop": 0x0FCE0,
     "stock_input_report": 0x0E248,
     "stock_ble_app_loop": 0x0D6A0,
     "stock_24g_init": 0x0FF94,
     "stock_profile_led_slot": 0x0DA74,
     "stock_is_non_ble": 0x0EEF8,
     "stock_set_rumble": 0x12220,
+    "stock_ble_rumble": 0x0D534,
+    "stock_hid_name": 0x1B468,
+    "stock_hid_map": 0x1B4D8,
+    "stock_hid_pnp": 0x1B54C,
     "stock_get_imu": 0x0E1F0,
     "stock_get_battery_pct": 0x0DF24,
     "stock_flash_erase_sector": 0x12774,
@@ -121,7 +135,7 @@ def main() -> int:
     readelf = str(tc32_bin / "tc32-elf-readelf")
 
     objs: list[str] = []
-    for src in ("csa2.c", "s2_gatt.c", "s2_proto.c"):
+    for src in ("csa2.c", "s2_gatt.c", "s2_proto.c", "elite.c"):
         obj = build / (Path(src).stem + ".o")
         run([
             gcc, "-std=gnu99", "-Os", "-Wall", "-Werror", "-ffreestanding", "-fno-builtin",
@@ -172,8 +186,12 @@ def main() -> int:
         if len(blob) > max_len:
             raise RuntimeError(f"section {sec} size {len(blob)} > max {max_len}")
         img_off = flash_addr - APP_START
-        if sec == ".cave" and any(b != 0 for b in buf[img_off : img_off + len(blob)]):
+        if sec in (".cave", ".cave_elite") and any(b != 0 for b in buf[img_off : img_off + len(blob)]):
             raise RuntimeError(f"cave at {flash_addr:#x} is not all zeros in stock!")
+        if sec in ELITE_HOOK_STOCK:
+            expected = bytes.fromhex(ELITE_HOOK_STOCK[sec])
+            if len(blob) != len(expected) or buf[img_off : img_off + len(expected)] != expected:
+                raise RuntimeError(f"stock bytes differ at {sec} ({flash_addr:#x})")
         buf[img_off : img_off + len(blob)] = blob
         patch_sections.append({
             "name": sec,

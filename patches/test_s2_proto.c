@@ -36,7 +36,7 @@ static int16_t  mock_imu[6];
 static uint32_t mock_sys_tick;
 static uint8_t mock_rumble[2];
 static unsigned mock_rumble_calls;
-static uint8_t mock_bond_flash[2][32];
+static uint8_t mock_bond_flash[2][108];
 #ifdef S2_BOND_DIAGNOSTICS
 static uint8_t mock_diag_flash[32];
 #endif
@@ -554,7 +554,172 @@ int main(void) {
     assert(s2_cfg_load() == (1u << S2_CFG_24G_SHIFT));
     s2_bond_load();
     assert(g_s2_test_state.have_ltk == 0u);
-    printf("PASS: Reconnect/Wake/Discovery ADV_IND + flash bond & mode persistence verified!\n");
+
+    /* Multi-slot universal BLE persistence + per-slot Pair MAC generation counters. */
+    s2_bt_boot_t b = { 0 };
+    s2_cfg_load_bt(&b);
+    uint8_t slot2_flags = S2_CFG_BT_STOCK | (2u << S2_CFG_BT_SLOT_SHIFT);
+    b.cfg = slot2_flags;
+    b.slot = 2u;
+    b.slot_modes = S2_DEFAULT_SLOT_MODES;
+    assert(s2_cfg_save_bt(&b, 0u) == 1 && b.mac_gen == 0u);
+    s2_bt_boot_t loaded = { 0 };
+    s2_cfg_load_bt(&loaded);
+    assert(loaded.cfg == slot2_flags && loaded.slot_modes == S2_DEFAULT_SLOT_MODES);
+    /* Bumping Pair MAC for Slot 2 increments only Slot 2; other slots stay 0. */
+    assert(s2_cfg_save_bt(&b, 1u) == 1 && b.mac_gen == 1u);
+    assert(s2_cfg_save_bt(&b, 1u) == 1 && b.mac_gen == 2u);
+    b.cfg = S2_CFG_BT_STOCK | (1u << S2_CFG_BT_SLOT_SHIFT); b.slot = 1u;
+    assert(s2_cfg_save_bt(&b, 0u) == 1 && b.mac_gen == 0u);
+    b.cfg = 3u << S2_CFG_BT_SLOT_SHIFT; b.slot = 3u;
+    assert(s2_cfg_save_bt(&b, 1u) == 1 && b.mac_gen == 1u);
+    b.cfg = slot2_flags; b.slot = 2u;
+    assert(s2_cfg_save_bt(&b, 0u) == 1 && b.mac_gen == 2u); /* Slot 2 bump preserved */
+    /* Failed commit returns 0 and leaves previous record authoritative. */
+    mock_interrupt_write = 1;
+    assert(s2_cfg_save_bt(&b, 1u) == 0);
+    mock_interrupt_write = 0;
+    s2_cfg_load_bt(&loaded);
+    assert(loaded.mac_gen == 2u);
+
+    /* Verify derived MACs are distinct across slots 0..3 and preserve base MAC for Slot 0. */
+    uint8_t m0[6] = { 0x10, 0x20, 0x30, 0xd8, 0x17, 0xe4 };
+    uint8_t m1[6] = { 0x10, 0x20, 0x30, 0xd8, 0x17, 0xe4 };
+    uint8_t m2[6] = { 0x10, 0x20, 0x30, 0xd8, 0x17, 0xe4 };
+    uint8_t m3[6] = { 0x10, 0x20, 0x30, 0xd8, 0x17, 0xe4 };
+    s2_derive_slot_mac(m0, 0u, 0u);
+    s2_derive_slot_mac(m1, 1u, 0u);
+    s2_derive_slot_mac(m2, 2u, 2u);
+    s2_derive_slot_mac(m3, 3u, 0u);
+    assert(m0[0] == 0x10 && m0[1] == 0x20);
+    assert(m1[0] == 0x10 && m1[1] == 0x30);
+    assert(m2[0] == 0x12 && m2[1] == 0x00);
+    assert(m3[0] == 0x10 && m3[1] == 0x10);
+
+    /* Verify universal D-pad slot resolution: recall, assign, and per-mode last-used shortcuts. */
+    {
+        s2_bt_boot_t r = { (1u << S2_CFG_24G_SHIFT), S2_DEFAULT_SLOT_MODES, 0u,
+                           S2_DEFAULT_LAST_MODE_SLOTS, 0u, S2_SLOT_MODE_STOCK, 0u };
+
+        /* Recall Down (Stock) -> records Down as last Stock slot */
+        assert(s2_resolve_bt_boot(&r, 1u, 0xffu) == 0u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_STOCK);
+
+        /* Recall Left -> Elite without changing mode */
+        assert(s2_resolve_bt_boot(&r, 2u, 0xffu) == 0u);
+        assert(r.slot == 2u && r.mode == S2_SLOT_MODE_ELITE && r.slot_modes == S2_DEFAULT_SLOT_MODES);
+        assert((r.cfg & S2_CFG_24G_MASK) == (1u << S2_CFG_24G_SHIFT));
+
+        /* Face-only B (Stock) -> returns to Down (last-used Stock slot), not Up */
+        assert(s2_resolve_bt_boot(&r, 0xffu, S2_SLOT_MODE_STOCK) == 0u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_STOCK);
+
+        /* Plain Home -> stays on Down (Stock) */
+        assert(s2_resolve_bt_boot(&r, 0xffu, 0xffu) == 0u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_STOCK);
+
+        /* Face-only Y -> jumps to Right (default Switch 2 slot) without clobbering Down */
+        assert(s2_resolve_bt_boot(&r, 0xffu, S2_SLOT_MODE_S2) == 0u);
+        assert(r.slot == 3u && r.mode == S2_SLOT_MODE_S2 && r.slot_modes == S2_DEFAULT_SLOT_MODES);
+
+        /* Assign Down + X -> changes Down from Stock to Elite (mode_changed = 1) */
+        assert(s2_resolve_bt_boot(&r, 1u, S2_SLOT_MODE_ELITE) == 1u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_ELITE);
+        assert(s2_slot_mode_get(r.slot_modes, 1u) == S2_SLOT_MODE_ELITE);
+
+        /* Face-only B now falls back to Up because Down was reassigned to Elite */
+        assert(s2_resolve_bt_boot(&r, 0xffu, S2_SLOT_MODE_STOCK) == 0u);
+        assert(r.slot == 0u && r.mode == S2_SLOT_MODE_STOCK);
+
+        /* Re-assigning Down + X when already Elite is idempotent (mode_changed = 0) */
+        assert(s2_resolve_bt_boot(&r, 1u, S2_SLOT_MODE_ELITE) == 0u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_ELITE);
+
+        /* If all 4 slots are assigned Stock, Face-only X reassigns the active slot to Elite. */
+        r.slot_modes = 0x55u;
+        assert(s2_resolve_bt_boot(&r, 0xffu, S2_SLOT_MODE_ELITE) == 1u);
+        assert(r.slot == 1u && r.mode == S2_SLOT_MODE_ELITE);
+        assert(s2_slot_mode_get(r.slot_modes, 1u) == S2_SLOT_MODE_ELITE);
+    }
+
+    /* Per-slot Switch 2 bond isolation: two consoles on Slot 3 (Right) and Slot 1 (Down). */
+    {
+        memset(mock_bond_flash, 0xff, sizeof(mock_bond_flash));
+        s2_bt_boot_t sb = { 0 };
+        s2_cfg_load_bt(&sb);
+        /* Select Slot 3 (Right, default Switch 2) and pair Console A */
+        assert(s2_resolve_bt_boot(&sb, 3u, 0xffu) == 0u);
+        assert(s2_cfg_save_bt(&sb, 0u) == 1);
+        memset(&g_s2_test_state, 0, sizeof(g_s2_test_state));
+        memset(g_s2_test_state.ltk, 0xaa, 16u);
+        memset(g_s2_test_state.host_addr, 0xa1, 6u);
+        g_s2_test_state.have_ltk = S2_BOND_VALID | S2_BOND_DIRTY | S2_BOND_READY;
+        s2_service_ble(10u, 1u, 1u, 0u);
+        assert(g_s2_test_state.have_ltk == S2_BOND_VALID);
+
+        /* Assign Slot 1 (Down) to Switch 2 -> must NOT inherit Console A's bond */
+        s2_cfg_load_bt(&sb);
+        assert(s2_resolve_bt_boot(&sb, 1u, S2_SLOT_MODE_S2) == 1u);
+        sb.s2_bond_mask &= (uint8_t)~(1u << sb.slot);
+        assert(s2_cfg_save_bt(&sb, 1u) == 1);
+        memset(&g_s2_test_state, 0, sizeof(g_s2_test_state));
+        s2_bond_load();
+        assert(g_s2_test_state.have_ltk == 0u);
+
+        /* Pair Console B on Slot 1 */
+        memset(g_s2_test_state.ltk, 0xbb, 16u);
+        memset(g_s2_test_state.host_addr, 0xb2, 6u);
+        g_s2_test_state.have_ltk = S2_BOND_VALID | S2_BOND_DIRTY | S2_BOND_READY;
+        s2_service_ble(20u, 1u, 1u, 0u);
+        assert(g_s2_test_state.have_ltk == S2_BOND_VALID);
+
+        /* Reboot into Slot 3 -> Console A bond intact */
+        s2_cfg_load_bt(&sb);
+        assert(s2_resolve_bt_boot(&sb, 3u, 0xffu) == 0u);
+        assert(s2_cfg_save_bt(&sb, 0u) == 1);
+        memset(&g_s2_test_state, 0, sizeof(g_s2_test_state));
+        s2_bond_load();
+        assert(g_s2_test_state.have_ltk == S2_BOND_VALID);
+        assert(g_s2_test_state.ltk[0] == 0xaau && g_s2_test_state.host_addr[0] == 0xa1u);
+
+        /* Reboot into Slot 1 -> Console B bond intact */
+        s2_cfg_load_bt(&sb);
+        assert(s2_resolve_bt_boot(&sb, 1u, 0xffu) == 0u);
+        assert(s2_cfg_save_bt(&sb, 0u) == 1);
+        memset(&g_s2_test_state, 0, sizeof(g_s2_test_state));
+        s2_bond_load();
+        assert(g_s2_test_state.have_ltk == S2_BOND_VALID);
+        assert(g_s2_test_state.ltk[0] == 0xbbu && g_s2_test_state.host_addr[0] == 0xb2u);
+    }
+    printf("PASS: Reconnect/Wake/Discovery ADV_IND + per-slot S2 bonds & universal BT slots verified!\n");
+
+    /* v4 CRC covers five MAC counters. Migrating preserves the stock slots,
+     * the Switch 2 bond, and the selected 2.4 GHz mode even if first saved from 2.4 GHz. */
+    const uint8_t v4_record[40] = {
+        'S', '2', 'B', 'D',
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        17, 18, 19, 20, 21, 22, 4, 17, 0x4f, 0x12, 0x93, 0,
+        1, 2, 3, 4, 5, 0, 0, 0,
+    };
+    memset(mock_bond_flash, 0xff, sizeof(mock_bond_flash));
+    memcpy(mock_bond_flash[0], v4_record, sizeof(v4_record));
+    /* First write after upgrade happens from 2.4 GHz mode (XInput -> Switch) */
+    uint8_t mig_cfg = s2_cfg_load();
+    assert(mig_cfg == (slot2_flags | (1u << S2_CFG_24G_SHIFT)));
+    s2_cfg_save_flags((uint8_t)((mig_cfg & (uint8_t)~S2_CFG_24G_MASK) | (2u << S2_CFG_24G_SHIFT)));
+    s2_cfg_load_bt(&loaded);
+    assert(loaded.slot == 2u && loaded.mode == S2_SLOT_MODE_STOCK);
+    assert(s2_slot_mode_get(loaded.slot_modes, 2u) == S2_SLOT_MODE_STOCK);
+    assert((loaded.cfg & S2_CFG_24G_MASK) == (2u << S2_CFG_24G_SHIFT));
+    /* Switch 2 bond migrated to Slot 3 (Right) stays readable */
+    assert(s2_resolve_bt_boot(&loaded, 3u, 0xffu) == 0u);
+    assert(s2_cfg_save_bt(&loaded, 0u) == 1);
+    memset(&g_s2_test_state, 0, sizeof(g_s2_test_state));
+    s2_bond_load();
+    assert(g_s2_test_state.have_ltk == S2_BOND_VALID);
+    assert(memcmp(g_s2_test_state.ltk, &v4_record[4], 16u) == 0);
+    assert(memcmp(g_s2_test_state.host_addr, &v4_record[20], 6u) == 0);
+    printf("PASS: v4 record migration (including 2.4 GHz first-save) verified!\n");
 
 #ifdef S2_BOND_DIAGNOSTICS
     memset(mock_diag_flash, 0xff, sizeof(mock_diag_flash));

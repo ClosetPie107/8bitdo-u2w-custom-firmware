@@ -99,6 +99,8 @@ extern uint8_t stock_is_non_ble(void);
 #endif
 
 extern const uint8_t s2_scan_rsp[16];
+extern const uint8_t elite_adv_data[30];
+extern const uint8_t elite_scan_rsp[28];
 
 #define REG_CSA2_EN       (*(volatile uint8_t  *)0x00844969u)
 #define REG_LL_FEAT_LO    (*(volatile uint32_t *)0x00844a04u)
@@ -110,8 +112,9 @@ extern const uint8_t s2_scan_rsp[16];
 #define REG_PHY_SWITCH_CB (*(volatile uint32_t *)0x00844b8cu)
 #define REG_ATT_RX_MTU    (*(volatile uint16_t *)0x00844d8cu)
 #define REG_ATT_DISC_HOLD (*(volatile uint8_t  *)0x00844d94u)
-#define REG_SMP_SEC_REQ0  (*(volatile uint8_t  *)0x00844f28u)
-#define REG_SMP_SEC_REQ1  (*(volatile uint8_t  *)0x00844f29u)
+#define REG_SMP_SEC_REQ0   (*(volatile uint8_t  *)0x00844f28u)
+#define REG_SMP_SEC_REQ1   (*(volatile uint8_t  *)0x00844f29u)
+#define REG_SMP_FLASH_ADDR (*(volatile uint32_t *)0x00844f68u)
 #define REG_PAIR_MODE     (*(volatile uint8_t  *)0x00845fa0u)
 #define REG_SYSTEM_TICK   (*(volatile uint32_t *)0x00800740u)
 #define REG_LL_STATE     (*(volatile uint8_t  *)0x0084495fu)
@@ -129,51 +132,24 @@ extern const uint8_t s2_scan_rsp[16];
 
 /* Exact TLSR8258 BLE 1M / 2M PHY baseband & modem register switch (from Telink liblt_8258) */
 static void rf_ble_switch_phy_1m_2m(uint8_t phy) {
-    if (phy == 2u) {
-        REG8(0x00801220u) = 0x04u;
-        REG8(0x00801221u) = 0x2au;
-        REG8(0x00801222u) = 0x43u;
-        REG8(0x00801223u) = 0x06u;
-        REG8(0x0080124au) = 0x89u;
-        REG8(0x0080124bu) = 0x06u;
-        REG8(0x00801254u) = 0x0eu;
-        REG8(0x00801255u) = 0x09u;
-        REG8(0x00801256u) = 0x0cu;
-        REG8(0x00801257u) = 0x08u;
-        REG8(0x00801273u) = 0x01u;
-        REG8(0x00801236u) = 0xb7u;
-        REG8(0x00801237u) = 0x8eu;
-        REG8(0x00801238u) = 0xc4u;
-        REG8(0x00801239u) = 0x71u;
-        REG8(0x00800402u) = 0x4cu;
-        REG8(0x00800404u) = 0xe5u;
-        REG8(0x00800405u) = 0x04u;
-        REG8(0x00800420u) = 0x1eu;
-        REG32(0x00800460u) = 0x61514636u;
-        REG16(0x00800464u) = 0x786du;
-    } else {
-        REG8(0x00801220u) = 0x16u;
-        REG8(0x00801221u) = 0x0au;
-        REG8(0x00801222u) = 0x20u;
-        REG8(0x00801223u) = 0x23u;
-        REG8(0x0080124au) = 0x0eu;
-        REG8(0x0080124bu) = 0x09u;
-        REG8(0x00801254u) = 0x89u;
-        REG8(0x00801255u) = 0x06u;
-        REG8(0x00801256u) = 0x8cu;
-        REG8(0x00801257u) = 0x07u;
-        REG8(0x00801273u) = 0x01u;
-        REG8(0x00801236u) = 0xb7u;
-        REG8(0x00801237u) = 0x8eu;
-        REG8(0x00801238u) = 0xc4u;
-        REG8(0x00801239u) = 0x71u;
-        REG8(0x00800402u) = 0x46u;
-        REG8(0x00800404u) = 0xf5u;
-        REG8(0x00800405u) = 0x04u;
-        REG8(0x00800420u) = 0x1eu;
-        REG32(0x00800460u) = 0x5f4f4434u;
-        REG16(0x00800464u) = 0x766bu;
+    static const struct { uint16_t off; uint8_t v1m; uint8_t v2m; } kRegs[] = {
+        { 0x1220u, 0x16u, 0x04u }, { 0x1221u, 0x0au, 0x2au },
+        { 0x1222u, 0x20u, 0x43u }, { 0x1223u, 0x23u, 0x06u },
+        { 0x124au, 0x0eu, 0x89u }, { 0x124bu, 0x09u, 0x06u },
+        { 0x1254u, 0x89u, 0x0eu }, { 0x1255u, 0x06u, 0x09u },
+        { 0x1256u, 0x8cu, 0x0cu }, { 0x1257u, 0x07u, 0x08u },
+        { 0x1273u, 0x01u, 0x01u },
+        { 0x1236u, 0xb7u, 0xb7u }, { 0x1237u, 0x8eu, 0x8eu },
+        { 0x1238u, 0xc4u, 0xc4u }, { 0x1239u, 0x71u, 0x71u },
+        { 0x0402u, 0x46u, 0x4cu }, { 0x0404u, 0xf5u, 0xe5u },
+        { 0x0405u, 0x04u, 0x04u }, { 0x0420u, 0x1eu, 0x1eu },
+    };
+    uint8_t is2m = (phy == 2u);
+    for (unsigned i = 0; i < sizeof(kRegs) / sizeof(kRegs[0]); i++) {
+        REG8(0x00800000u + kRegs[i].off) = is2m ? kRegs[i].v2m : kRegs[i].v1m;
     }
+    REG32(0x00800460u) = is2m ? 0x61514636u : 0x5f4f4434u;
+    REG16(0x00800464u) = is2m ? 0x786du : 0x766bu;
 }
 
 void s2_phy_reset_1m(void) {
@@ -227,39 +203,67 @@ extern void stock_matrix_set_column(uint8_t column, uint8_t high);
 extern uint8_t stock_matrix_read_rows(void);
 extern void stock_delay_us(uint32_t us);
 
-static uint8_t s2_sample_face_button(uint8_t col) {
-    /* Row bit 1 (0x02) on columns 1..4 maps to physical X, Y, A, B. */
+static uint8_t s2_sample_matrix(uint8_t col, uint8_t row_mask) {
+    /* Row bit 0 (0x01) on cols 1..4 = D-pad Up, Left, Down, Right.
+     * Row bit 1 (0x02) on cols 1..4 = Face X, Y, A, B. */
     stock_matrix_set_all_columns(1u);
     stock_matrix_set_column(col, 0u);
     stock_delay_us(6u);
-    uint8_t pressed = (stock_matrix_read_rows() & 0x02u) != 0u;
+    uint8_t pressed = (stock_matrix_read_rows() & row_mask) != 0u;
     stock_matrix_set_all_columns(0u);
     stock_delay_us(6u);
     return pressed;
 }
 
+/* 8 KiB ping-pong Telink SMP regions for universal D-pad slots 0..3 (Up/Down/Left/Right). */
+static const uint32_t kSmpSlotAddr[4] = {
+    0x00074000u,
+    0x0006e000u,
+    0x00070000u,
+    0x00072000u,
+};
+
+static uint8_t s2_scan_cols(const uint8_t *cols, uint8_t count, uint8_t row_mask) {
+    for (uint8_t i = 0; i < count; i++) {
+        if (s2_sample_matrix(cols[i], row_mask)) return i;
+    }
+    return 0xffu;
+}
+
+/* Hooked at 0xd570 (replaces no-op `tjl 0xfce0(mac, 6)` before LL MAC init).
+ * Resolves universal D-pad slot + BLE mode, persists selection, clears/bumps
+ * pairing identity on mode change or Pair, and derives mac[6]. */
+void s2_bt_mac_init_hook(uint8_t mac[6], uint8_t len) {
+    (void)len;
+    static const uint8_t kDpadCols[4] = { 1u, 3u, 2u, 4u }; /* Up, Down, Left, Right */
+    static const uint8_t kFaceCols[3] = { 2u, 4u, 1u };     /* Y=S2(0), B=Stock(1), X=Elite(2) */
+    uint8_t dpad = s2_scan_cols(kDpadCols, 4u, 0x01u);
+    uint8_t face = s2_scan_cols(kFaceCols, 3u, 0x02u);
+
+    s2_bt_boot_t prev, boot;
+    s2_cfg_load_bt(&prev);
+    boot = prev;
+    uint8_t mode_changed = s2_resolve_bt_boot(&boot, dpad, face);
+    if (mode_changed) {
+        boot.s2_bond_mask &= (uint8_t)~(1u << boot.slot);
+    }
+    if (!s2_cfg_save_bt(&boot, (REG_PAIR_MODE == 1u) || mode_changed)) {
+        boot = prev;
+    } else if (mode_changed && boot.mode != S2_SLOT_MODE_S2) {
+        s2_erase_smp_slot(kSmpSlotAddr[boot.slot]);
+    }
+    s2_derive_slot_mac(mac, boot.slot, boot.mac_gen);
+    S2_STOCK_BT = boot.mode == S2_SLOT_MODE_ELITE ? (uint8_t)(S2_BT_ELITE_LATCH + boot.slot)
+                : (boot.mode == S2_SLOT_MODE_STOCK ? (uint8_t)(1u + boot.slot) : 0u);
+}
+
 __attribute__((section(".cave.init")))
 void ble_init_hook(void) {
-    /* Home + B = 8BitDo BLE (DInput), Home + Y = Switch 2 BLE, Home = last used. */
-    uint8_t hold_b = s2_sample_face_button(4u);
-    uint8_t hold_y = s2_sample_face_button(2u);
-    uint8_t cfg = s2_cfg_load();
-    uint8_t bt_stock = (cfg & S2_CFG_BT_STOCK) != 0u;
-    if (hold_b) {
-        bt_stock = 1u;
-    } else if (hold_y) {
-        bt_stock = 0u;
-    }
-    uint8_t new_cfg = (uint8_t)((cfg & (uint8_t)~S2_CFG_BT_STOCK) | (bt_stock ? S2_CFG_BT_STOCK : 0u));
-    if (new_cfg != cfg) {
-        s2_cfg_save_flags(new_cfg);
-    }
-    S2_STOCK_BT = bt_stock;
     stock_ll_init_slave();
     if (S2_STOCK_BT) return;
 
     uint8_t *p = (uint8_t *)S2_STATE;
-    for (unsigned i = 0; i < sizeof(s2_state_t); i++) {
+    for (unsigned i = 0; i < S2_STATE_BYTES; i++) {
         p[i] = 0u;
     }
     s2_bond_load();
@@ -277,6 +281,7 @@ void ble_init_hook(void) {
 /* Hooked at 0xd59a (replaces `tjl 0xd75c`) */
 void s2_gatt_init_hook(void) {
     if (S2_STOCK_BT) {
+        elite_gatt_init();
         stock_gatt_init();
         return;
     }
@@ -287,6 +292,9 @@ void s2_gatt_init_hook(void) {
 
 /* Hooked at 0xd5aa (replaces `tjl 0x19fc8`) */
 int s2_smp_init_hook(void) {
+    if (S2_STOCK_BT) {
+        REG_SMP_FLASH_ADDR = kSmpSlotAddr[(S2_STOCK_BT - 1u) & 3u];
+    }
     int r = stock_smp_init();
     if (S2_STOCK_BT) return r;
     REG_SMP_SEC_REQ0 = 0u;       /* Suppress SMP Security Request (0x0b) on connect */
@@ -299,6 +307,10 @@ int s2_smp_init_hook(void) {
 
 /* Hooked at 0xd5b2 (replaces `tjl 0x158b4`) */
 void s2_adv_data_hook(const uint8_t *orig_p, uint8_t orig_len) {
+    if (S2_STOCK_BT >= S2_BT_ELITE_LATCH) {
+        stock_ll_set_adv_data(elite_adv_data, sizeof(elite_adv_data));
+        return;
+    }
     if (S2_STOCK_BT) {
         stock_ll_set_adv_data(orig_p, orig_len);
         return;
@@ -308,6 +320,10 @@ void s2_adv_data_hook(const uint8_t *orig_p, uint8_t orig_len) {
 
 /* Hooked at 0xd5ba (replaces `tjl 0x15938`) */
 void s2_scan_rsp_hook(const uint8_t *orig_p, uint8_t orig_len) {
+    if (S2_STOCK_BT >= S2_BT_ELITE_LATCH) {
+        stock_ll_set_scan_rsp(elite_scan_rsp, (uint8_t)(elite_scan_rsp[0] + 1u));
+        return;
+    }
     if (S2_STOCK_BT) {
         stock_ll_set_scan_rsp(orig_p, orig_len);
         return;
@@ -378,19 +394,12 @@ void s2_ble_app_loop_hook(void) {
 void s2_24g_init_hook(void) {
     stock_24g_init();
     /* Home + B = DInput (1), Home + X = XInput (0), Home + Y = Switch (2), Home = last used. */
-    uint8_t hold_b = s2_sample_face_button(4u);
-    uint8_t hold_x = s2_sample_face_button(1u);
-    uint8_t hold_y = s2_sample_face_button(2u);
+    static const uint8_t k24gCols[3] = { 4u, 1u, 2u }; /* B > X > Y precedence */
+    uint8_t sel = s2_scan_cols(k24gCols, 3u, 0x02u);
     uint8_t cfg = s2_cfg_load();
-    uint8_t mode = (uint8_t)((cfg & S2_CFG_24G_MASK) >> S2_CFG_24G_SHIFT);
+    uint8_t mode = sel < 3u ? (uint8_t)(sel ^ (sel < 2u))
+                            : (uint8_t)((cfg & S2_CFG_24G_MASK) >> S2_CFG_24G_SHIFT);
     if (mode > 2u) mode = 0u;
-    if (hold_b) {
-        mode = 1u;
-    } else if (hold_x) {
-        mode = 0u;
-    } else if (hold_y) {
-        mode = 2u;
-    }
     uint8_t new_cfg = (uint8_t)((cfg & (uint8_t)~S2_CFG_24G_MASK)
                                 | ((uint8_t)(mode << S2_CFG_24G_SHIFT) & S2_CFG_24G_MASK));
     if (new_cfg != cfg) {
