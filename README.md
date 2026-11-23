@@ -21,6 +21,8 @@ Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimat
   - **Rear paddles mapped to GL / GR** (Nintendo Pro Controller 2 grip buttons)
   - **Square (Turbo) button mapped to Capture** (screenshots / video clips on Switch 2)
   - **Battery level reporting** and stock front profile LED behavior
+- **Linux / Steam Input Bluetooth PnP ID fix:**
+  - Fixes stock v1.10's invalid BLE PnP ID Vendor Source byte (`0x12` → `0x02`) so Linux BlueZ properly exposes `2dc8:6012`, allowing Steam's `udev` rules (`60-steam-input.rules`) to grant `hidraw` access for native Steam Input gyro and all 4 extra buttons (`L4`, `R4`, `PL`, `PR`) over Bluetooth
 - **Experimental Xbox Elite Series 2 BLE mode (`8BitDo Ultimate 2 Xbox`):**
   - Emulates Xbox Elite Series 2 (`045e:0b05`) over BLE based on the [8bitdo-ultimate-toolkit](https://github.com/craigmdennis/8bitdo-ultimate-toolkit/blob/u2w-xbox-rumble/u2w_xbox/README.md) report format
   - Exposes **rumble** (both Apple Core Haptics quadratic and SDL linear scaling), **battery level**, and **all 4 independent rear/extra paddles (`P1`–`P4`)**

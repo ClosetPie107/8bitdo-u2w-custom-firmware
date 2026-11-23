@@ -101,6 +101,7 @@ void elite_gatt_init(void) {
     const uint8_t *name = elite ? elite_scan_rsp + 2 : stock_hid_name;
     for (unsigned i = 0; i < sizeof(elite_map_ram); ++i) elite_map_ram[i] = map[i];
     for (unsigned i = 0; i < sizeof(elite_pnp_ram); ++i) elite_pnp_ram[i] = pnp[i];
+    elite_pnp_ram[0] = 2u; /* Fix stock 0x12 Vendor ID Source typo so BlueZ parses 2dc8:6012 */
     for (unsigned i = 0; i < sizeof(elite_name_ram); ++i) elite_name_ram[i] = name[i];
     /* First byte of the initialized stock HID Output Report Reference. */
     *(volatile uint8_t *)0x00845a14u = elite ? 3u : 5u;
