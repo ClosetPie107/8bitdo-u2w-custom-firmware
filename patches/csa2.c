@@ -1,5 +1,5 @@
 /*
- * U2W v1.10 Switch 2 BLE hooks & CSA #2 channel selection.
+ * U2W v1.10 Switch 1 BLE HOGP hooks & CSA #2 channel selection.
  *
  * Placed in the 12 KiB zero cave at flash 0x0a040..0x0d000 (inside the
  * bootloader-covered Telink code region [0x5000, 0x1ca60)).
@@ -80,7 +80,6 @@ uint8_t csa2_select_channel(const uint8_t *chn_map, uint16_t counter, uint16_t c
 extern void stock_ll_init_slave(void);
 extern void stock_att_set_table(const void *tbl);
 extern int  stock_smp_init(void);
-extern void stock_ll_reg_ltk_cb(void *cb);
 extern int  stock_ll_set_adv_data(const uint8_t *p, uint8_t len);
 extern void stock_ll_set_scan_rsp(const uint8_t *p, uint8_t len);
 extern int  stock_disconn_check(void);
@@ -93,42 +92,31 @@ extern void stock_start_pairing(void);
 extern int  stock_input_report(void);
 extern void stock_ble_app_loop(void);
 extern void stock_24g_init(void);
-#ifdef S2_BOND_DIAGNOSTICS
-extern uint8_t stock_profile_led_slot(void);
-extern uint8_t stock_is_non_ble(void);
-#endif
 
-extern const uint8_t s2_scan_rsp[16];
 extern const uint8_t elite_adv_data[30];
 extern const uint8_t elite_scan_rsp[28];
 
-#define REG_CSA2_EN       (*(volatile uint8_t  *)0x00844969u)
-#define REG_LL_FEAT_LO    (*(volatile uint32_t *)0x00844a04u)
-#define BLTTCON           ((volatile uint8_t   *)0x00844af0u)
-#define REG_CSA2_CB       (*(volatile uint32_t *)0x00844b78u)
-#define BLT_CONN_PHY      ((volatile uint8_t   *)0x00844b7cu)
-#define REG_PHY_HW        (*(volatile uint8_t  *)0x00844b86u)
-#define REG_PHY_UPDATE_CB (*(volatile uint32_t *)0x00844b88u)
-#define REG_PHY_SWITCH_CB (*(volatile uint32_t *)0x00844b8cu)
-#define REG_ATT_RX_MTU    (*(volatile uint16_t *)0x00844d8cu)
-#define REG_ATT_DISC_HOLD (*(volatile uint8_t  *)0x00844d94u)
-#define REG_SMP_SEC_REQ0   (*(volatile uint8_t  *)0x00844f28u)
-#define REG_SMP_SEC_REQ1   (*(volatile uint8_t  *)0x00844f29u)
+#define REG_CSA2_EN        (*(volatile uint8_t  *)0x00844969u)
+#define REG_LL_FEAT_LO     (*(volatile uint32_t *)0x00844a04u)
+#define BLTTCON            ((volatile uint8_t   *)0x00844af0u)
+#define REG_CSA2_CB        (*(volatile uint32_t *)0x00844b78u)
+#define BLT_CONN_PHY       ((volatile uint8_t   *)0x00844b7cu)
+#define REG_PHY_HW         (*(volatile uint8_t  *)0x00844b86u)
+#define REG_PHY_UPDATE_CB  (*(volatile uint32_t *)0x00844b88u)
+#define REG_PHY_SWITCH_CB  (*(volatile uint32_t *)0x00844b8cu)
+#define REG_ATT_RX_MTU     (*(volatile uint16_t *)0x00844d8cu)
+#define REG_ATT_DISC_HOLD  (*(volatile uint8_t  *)0x00844d94u)
 #define REG_SMP_FLASH_ADDR (*(volatile uint32_t *)0x00844f68u)
-#define REG_PAIR_MODE     (*(volatile uint8_t  *)0x00845fa0u)
-#define REG_SYSTEM_TICK   (*(volatile uint32_t *)0x00800740u)
-#define REG_LL_STATE     (*(volatile uint8_t  *)0x0084495fu)
-#define REG_LL_ENC_STATE (*(volatile uint8_t  *)0x00844c3du)
-#define REG_APP_CONNECTED (*(volatile uint32_t *)0x0084445cu)
-#define REG_24G_MODE     (*(volatile uint8_t  *)0x0084615du)
+#define REG_PAIR_MODE      (*(volatile uint8_t  *)0x00845fa0u)
+#define REG_24G_MODE       (*(volatile uint8_t  *)0x0084615du)
 
-#define REG8(a)           (*(volatile uint8_t  *)(a))
-#define REG16(a)          (*(volatile uint16_t *)(a))
-#define REG32(a)          (*(volatile uint32_t *)(a))
+#define REG8(a)            (*(volatile uint8_t  *)(a))
+#define REG16(a)           (*(volatile uint16_t *)(a))
+#define REG32(a)           (*(volatile uint32_t *)(a))
 
-#define LL_FEAT_CSA2_BIT  (1u << 14)
-#define LL_FEAT_2M_PHY    (1u << 8)
-#define LL_FEAT_CONN_PRM  (1u << 1)
+#define LL_FEAT_CSA2_BIT   (1u << 14)
+#define LL_FEAT_2M_PHY     (1u << 8)
+#define LL_FEAT_CONN_PRM   (1u << 1)
 
 /* Exact TLSR8258 BLE 1M / 2M PHY baseband & modem register switch (from Telink liblt_8258) */
 static void rf_ble_switch_phy_1m_2m(uint8_t phy) {
@@ -236,7 +224,7 @@ static uint8_t s2_scan_cols(const uint8_t *cols, uint8_t count, uint8_t row_mask
 void s2_bt_mac_init_hook(uint8_t mac[6], uint8_t len) {
     (void)len;
     static const uint8_t kDpadCols[4] = { 1u, 3u, 2u, 4u }; /* Up, Down, Left, Right */
-    static const uint8_t kFaceCols[3] = { 2u, 4u, 1u };     /* Y=S2(0), B=Stock(1), X=Elite(2) */
+    static const uint8_t kFaceCols[3] = { 2u, 4u, 1u };     /* Y=Switch1(0), B=Stock(1), X=Elite(2) */
     uint8_t dpad = s2_scan_cols(kDpadCols, 4u, 0x01u);
     uint8_t face = s2_scan_cols(kFaceCols, 3u, 0x02u);
 
@@ -249,7 +237,7 @@ void s2_bt_mac_init_hook(uint8_t mac[6], uint8_t len) {
     }
     if (!s2_cfg_save_bt(&boot, (REG_PAIR_MODE == 1u) || mode_changed)) {
         boot = prev;
-    } else if (mode_changed && boot.mode != S2_SLOT_MODE_S2) {
+    } else if (mode_changed) {
         s2_erase_smp_slot(kSmpSlotAddr[boot.slot]);
     }
     s2_derive_slot_mac(mac, boot.slot, boot.mac_gen);
@@ -266,7 +254,11 @@ void ble_init_hook(void) {
     for (unsigned i = 0; i < S2_STATE_BYTES; i++) {
         p[i] = 0u;
     }
-    s2_bond_load();
+    S2_STATE->input_mode = 0x3fu;
+    S2_STATE->vib_enabled = 1u;
+    S2_STATE->proto_mode = 0x01u;
+    S2_STATE->last_bat_pct = 0xffu;
+
     REG_CSA2_EN = 1u;
     REG_LL_FEAT_LO |= LL_FEAT_CSA2_BIT | LL_FEAT_2M_PHY | LL_FEAT_CONN_PRM;
     REG_CSA2_CB = (uint32_t)&csa2_select_channel;
@@ -285,8 +277,8 @@ void s2_gatt_init_hook(void) {
         stock_gatt_init();
         return;
     }
-    stock_att_set_table(s2_gatt_table);
-    REG_ATT_RX_MTU = 512u;       /* Switch 2 requires ATT_EXCHANGE_MTU_RSP == 512 (effective MTU clamped to 158 in l2cap_rx_tap) */
+    stock_att_set_table(sw1_gatt_table);
+    REG_ATT_RX_MTU = 158u;
     REG_ATT_DISC_HOLD = 0u;      /* Disable 300 ms post-discovery notify hold-off */
 }
 
@@ -294,13 +286,13 @@ void s2_gatt_init_hook(void) {
 int s2_smp_init_hook(void) {
     if (S2_STOCK_BT) {
         REG_SMP_FLASH_ADDR = kSmpSlotAddr[(S2_STOCK_BT - 1u) & 3u];
+        return stock_smp_init();
     }
+    s2_bt_boot_t boot;
+    s2_cfg_load_bt(&boot);
+    REG_SMP_FLASH_ADDR = kSmpSlotAddr[boot.slot & 3u];
     int r = stock_smp_init();
-    if (S2_STOCK_BT) return r;
-    REG_SMP_SEC_REQ0 = 0u;       /* Suppress SMP Security Request (0x0b) on connect */
-    REG_SMP_SEC_REQ1 = 0u;
-    stock_ll_reg_ltk_cb((void *)&s2_ltk_req_cb);
-    /* Bound Telink's negotiated ATT MTU after processing the request. */
+    /* Bound Telink's negotiated ATT MTU after processing Exchange MTU. */
     *(volatile uint32_t *)0x00844a30u = (uint32_t)&s2_l2cap_rx_tap;
     return r;
 }
@@ -315,7 +307,7 @@ void s2_adv_data_hook(const uint8_t *orig_p, uint8_t orig_len) {
         stock_ll_set_adv_data(orig_p, orig_len);
         return;
     }
-    s2_startup_advertising((uint16_t)(REG_SYSTEM_TICK >> 16), REG_PAIR_MODE == 1u);
+    stock_ll_set_adv_data(sw1_adv_data, sizeof(sw1_adv_data));
 }
 
 /* Hooked at 0xd5ba (replaces `tjl 0x15938`) */
@@ -328,66 +320,53 @@ void s2_scan_rsp_hook(const uint8_t *orig_p, uint8_t orig_len) {
         stock_ll_set_scan_rsp(orig_p, orig_len);
         return;
     }
-    stock_ll_set_scan_rsp(s2_scan_rsp, 16u);
+    stock_ll_set_scan_rsp(sw1_scan_rsp, sizeof(sw1_scan_rsp));
 }
 
-/* Hooked at 0xd5be (replaces `tjl 0x1a018`): return 0 -> always use ADV_IND */
+/* Hooked at 0xd5be (replaces `tjl 0x1a018`): standard SMP bond count */
 int s2_bond_count_hook(void) {
-    return S2_STOCK_BT ? stock_bond_count() : 0;
+    return stock_bond_count();
 }
 
 /* Hooked at 0xd48a (replaces `tjl 0x187f0` in connect cb) */
 int s2_connect_mtu_hook(uint16_t conn_h, uint16_t mtu) {
     if (S2_STOCK_BT) return stock_gatt_exchange_mtu(conn_h, mtu);
-    s2_on_ble_connect();
-    /* Let Switch 2 initiate ATT_EXCHANGE_MTU_REQ */
-    return 0;
+    sw1_on_ble_connect();
+    return stock_gatt_exchange_mtu(conn_h, 158u);
 }
 
 /* Hooked at 0xd4ea (replaces `tjl 0x10e94` in disconnect cb) */
 int s2_disconnect_hook(void) {
     if (!S2_STOCK_BT) {
-        s2_on_ble_disconnect((uint16_t)(REG_SYSTEM_TICK >> 16), REG_PAIR_MODE == 1u);
+        sw1_on_ble_disconnect();
     }
     return stock_disconn_check();
 }
 
 /* Hooked at 0xd496 (connection parameter update). */
 int s2_conn_param_hook(uint16_t min, uint16_t max, uint16_t latency, uint16_t timeout) {
-    return S2_STOCK_BT ? stock_conn_param_update(min, max, latency, timeout) : 0;
+    return stock_conn_param_update(min, max, latency, timeout);
 }
 
 void s2_batt_notify_hook(void) {
     if (S2_STOCK_BT) stock_batt_notify();
+    else sw1_notify_battery();
 }
 
 int s2_input_report_hook(void) {
-    return S2_STOCK_BT ? stock_input_report() : s2_send_input_report();
+    return S2_STOCK_BT ? stock_input_report() : sw1_send_input_report();
 }
 
-/* Stock pairing can start while already advertising, without redoing BLE init. */
 void s2_start_pairing_hook(void) {
-    if (!S2_STOCK_BT) s2_pairing_advertising((uint16_t)(REG_SYSTEM_TICK >> 16));
     stock_start_pairing();
 }
 
 /* Called after the Telink BLE stack has run for this iteration. */
 void s2_ble_app_loop_hook(void) {
     stock_ble_app_loop();
-    if (S2_STOCK_BT) return;
-    uint8_t connected = (REG_LL_STATE & 2u) || REG_APP_CONNECTED;
-#ifndef S2_BOND_DIAGNOSTICS
-    if ((S2_STATE->flags & (S2_FLAG_WAKE_ACTIVE | S2_FLAG_ADV_PENDING | S2_FLAG_PAIRING_OPEN)) ||
-        (S2_STATE->have_ltk & S2_BOND_READY))
-#endif
-    {
-        /* The stock LL_START_ENC_RSP handler sets encryption state to 5. */
-        s2_service_ble((uint16_t)(REG_SYSTEM_TICK >> 16), connected,
-                       connected && REG_LL_ENC_STATE == 5u, REG_PAIR_MODE == 1u);
+    if (!S2_STOCK_BT && S2_STATE->q_count > 0u) {
+        sw1_flush_pending_replies();
     }
-#ifdef S2_BOND_DIAGNOSTICS
-    if (connected) s2_save_bond_diagnostics();
-#endif
 }
 
 /* Hooked at 0xd9ec (replaces `tjl 0xff94` for 2.4G / USB startup). */
@@ -407,18 +386,5 @@ void s2_24g_init_hook(void) {
     }
     REG_24G_MODE = mode;
 }
-
-#ifdef S2_BOND_DIAGNOSTICS
-/* This return value goes only to the peer's LED display field, not the profile logic. */
-uint8_t s2_profile_led_slot_hook(void) {
-    uint8_t slot = stock_profile_led_slot();
-    if (S2_STOCK_BT || !REG_APP_CONNECTED || stock_is_non_ble()) return slot;
-
-    uint8_t flags = S2_STATE->bond_diagnostics;
-    if ((flags & 0x40u) && (REG_SYSTEM_TICK & (1u << 23))) return 6u;
-    if (flags & 0x20u) return 2u;
-    return (flags & 0x02u) ? 1u : 0u;
-}
-#endif
 
 #endif /* !HOST_TEST */
