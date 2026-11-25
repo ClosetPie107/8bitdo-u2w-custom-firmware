@@ -138,7 +138,8 @@ MIT — see [LICENSE](LICENSE).
 - [crackheadakira/8BitDoRetroKeyboardFlasher](https://github.com/crackheadakira/8BitDoRetroKeyboardFlasher) — 8BitDo Telink HID firmware flashing precedent
 - [aeromodes/8cryptdo](https://github.com/aeromodes/8cryptdo) — 8BitDo `.dat` firmware container encryption/decryption reference
 - [fwupd/fwupd (`plugins/ebitdo`)](https://github.com/fwupd/fwupd/tree/main/plugins/ebitdo) & [fwupd/8bitdo-firmware](https://github.com/fwupd/8bitdo-firmware) — Legacy 8BitDo HID firmware format and archive reference
-- [FCC ID `2AOWF-24GULT2` Internal Photos](https://fccid.io/2AOWF24GULT2/Internal-Photos/Internal-Photos-8068309) — Hardware identification of the Telink `TLSR8258` (QFN48) and CH32V203 peer MCU
+- The FCC internal photos show the **Telink TLSR8258** (QFN48). [FCC ID `2AOWF-24GULT2` internal photos](https://fccid.io/2AOWF24GULT2/Internal-Photos/Internal-Photos-8068309)
+- The stock v1.09 and v1.10 peer firmware points to **WCH CH32X035**. Both images handle the fourth UART at `0x40004c00` on IRQ 43, which matches CH32X035. WCH's CH32V20x SDK assigns that UART to IRQ 61 or 66, depending on the variant. Biase-d also reported reading CH32X035 on their unit. [CH32X035 SDK](https://github.com/openwch/ch32x035/blob/main/EVT/EXAM/SRC/Peripheral/inc/ch32x035.h) · [CH32V20x SDK](https://github.com/openwch/ch32v20x/blob/main/EVT/EXAM/SRC/Peripheral/inc/ch32v20x.h) · [Biase-d's report](https://gist.github.com/barraIhsan/783a82bcf32bed896c85d27dbb8018a5?permalink_comment_id=6490288)
 - [libsdl-org/SDL](https://github.com/libsdl-org/SDL) (`SDL_hidapi_8bitdo.c`) — 8BitDo Ultimate 2 Wireless IMU axis orientation and scale reference
 
 ### Telink TLSR8258 & TC32 Tooling
