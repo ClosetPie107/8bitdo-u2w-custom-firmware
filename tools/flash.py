@@ -44,7 +44,7 @@ from u2w_boot import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PATCH = ROOT / "dist" / "u2w-v1.10-switch2.patch.json"
+DEFAULT_PATCH = ROOT / "dist" / "u2w-v1.10-switch1.patch.json"
 DEFAULT_BACKUP = ROOT / "backups" / "u2w-stock-v1.10.image.bin"
 
 

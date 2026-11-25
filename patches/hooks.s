@@ -1,13 +1,6 @@
 /*
- * TC32 patch entry points for U2W v1.10 Switch 2 BLE and persistent mode memory.
+ * TC32 patch entry points for U2W v1.10 Switch 1 BLE HOGP and persistent mode memory.
  */
-
-#ifdef S2_BOND_DIAGNOSTICS
-    .section .hook_profile_leds, "ax"
-    .global _hook_profile_leds
-_hook_profile_leds:
-    tjl     s2_profile_led_slot_hook
-#endif
 
     .section .hook_bt_mac_init, "ax"
     .global _hook_bt_mac_init
@@ -80,25 +73,53 @@ _hook_conn_interval:
     .section .cave.interval, "ax"
     .global s2_conn_interval
 s2_conn_interval:
-    tloadr  r3, .Lstock_bt
-    tloadrb r3, [r3, #0]
-    tcmp    r3, #0
-    tjne    .Lstock_interval
-    tsub    r2, r1, #4       /* Switch 2 uses a 5 ms interval */
-    tj      .Linterval_done
-.Lstock_interval:
-    tsub    r2, r1, #6       /* Original 7.5 ms minimum */
-.Linterval_done:
-    tshftl  r2, r2, #16     /* Displaced instruction at 0x15b5e */
+    tsub    r2, r1, #6       /* Standard BLE 7.5 ms minimum interval */
+    tshftl  r2, r2, #16      /* Displaced instruction at 0x15b5e */
     tjex    lr
-    .align  2
-.Lstock_bt:
-    .word   0x00845f77
 
     .section .hook_start_pairing, "ax"
     .global _hook_start_pairing
 _hook_start_pairing:
     tjl     s2_start_pairing_hook
+
+/* Home Ring PWM5: preserve stock on/off and pairing-blink control flow. */
+    .section .hook_home_ring_blink_off, "ax"
+    .global _hook_home_ring_blink_off
+_hook_home_ring_blink_off:
+    tpush   {lr}
+    tmovs   r0, #0
+    tjl     home_ring_blink_go
+    .short  0x06c0
+    .short  0x06c0
+
+    .section .hook_home_ring_blink_on, "ax"
+    .global _hook_home_ring_blink_on
+_hook_home_ring_blink_on:
+    tpush   {lr}
+    tmovs   r0, #1
+    tjl     home_ring_blink_go
+    .short  0x06c0
+    .short  0x06c0
+    .short  0x06c0
+    .short  0x06c0
+
+    .section .hook_home_ring_solid_off, "ax"
+    .global _hook_home_ring_solid_off
+_hook_home_ring_solid_off:
+    tjl     home_ring_maybe_off
+
+    .section .hook_home_ring_solid_on, "ax"
+    .global _hook_home_ring_solid_on
+_hook_home_ring_solid_on:
+    tjl     home_ring_maybe_on
+
+    .section .hook_home_ring_init, "ax"
+    .global _hook_home_ring_init
+_hook_home_ring_init:
+    tjl     home_ring_setup
+    .short  0x06c0
+    .short  0x06c0
+    .short  0x06c0
 
     .section .hook_pair_mac_inc, "ax"
     .global _hook_pair_mac_inc
