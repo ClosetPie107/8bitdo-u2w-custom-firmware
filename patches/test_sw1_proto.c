@@ -231,7 +231,7 @@ int main(void) {
     assert(get_i16(&last_noti_buf[19 + 12]) == 0);      /* gyro origin X */
     assert(get_i16(&last_noti_buf[19 + 18]) == 0x343b); /* gyro coeff X */
 
-    /* Read factory Stick calibration @ 0x603D (18 bytes) & verify non-quirk asymmetry */
+    /* Read factory Stick calibration @ 0x603D (18 bytes) & verify macOS full-range quirk (max-min <= 1 -> 0x7FF) */
     const uint8_t spi_stk[5] = { 0x3d, 0x60, 0x00, 0x00, 18 };
     send_out01(2u, NULL, 0x10u, spi_stk, sizeof(spi_stk));
     assert(last_noti_buf[18] == 18u);
@@ -239,10 +239,10 @@ int main(void) {
     assert(unpack_stick12_y(&last_noti_buf[19 + 0]) == 0x7ffu); /* L max Y */
     assert(unpack_stick12_x(&last_noti_buf[19 + 3]) == 0x800u); /* L ctr X */
     assert(unpack_stick12_y(&last_noti_buf[19 + 3]) == 0x800u); /* L ctr Y */
-    assert(unpack_stick12_x(&last_noti_buf[19 + 6]) == 0x7fcu); /* L min X */
-    assert(unpack_stick12_y(&last_noti_buf[19 + 6]) == 0x7fcu); /* L min Y */
+    assert(unpack_stick12_x(&last_noti_buf[19 + 6]) == 0x7ffu); /* L min X */
+    assert(unpack_stick12_y(&last_noti_buf[19 + 6]) == 0x7ffu); /* L min Y */
     assert(unpack_stick12_x(&last_noti_buf[19 + 9]) == 0x800u); /* R ctr X */
-    assert(unpack_stick12_x(&last_noti_buf[19 + 12]) == 0x7fcu);/* R min X */
+    assert(unpack_stick12_x(&last_noti_buf[19 + 12]) == 0x7ffu);/* R min X */
     assert(unpack_stick12_x(&last_noti_buf[19 + 15]) == 0x7ffu);/* R max X */
 
     /* Read Stick params @ 0x6086 & verify inner deadzone = 0x001 */
