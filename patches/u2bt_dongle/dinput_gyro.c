@@ -69,16 +69,16 @@ void dinput_pack_hook(uint32_t btn, uint32_t sticks, uint32_t trig, uint8_t *dst
     dst[2] = (uint8_t)(sticks >> 8);
     dst[3] = (uint8_t)(sticks >> 16);
     dst[4] = (uint8_t)(sticks >> 24);
-    dst[5] = (uint8_t)(trig >> 8);
-    dst[6] = (uint8_t)(trig);
+    dst[5] = (uint8_t)(trig);       /* wire data[6] = RT */
+    dst[6] = (uint8_t)(trig >> 8);  /* wire data[7] = LT */
 
     uint8_t b0 = 0u, b1 = 0u, b2 = 0u;
     if (btn & 0x00002000u) b0 |= 0x01u; /* A */
     if (btn & 0x00001000u) b0 |= 0x02u; /* B */
-    if (btn & 0x02000000u) b0 |= 0x04u; /* L4 */
+    if (btn & 0x04000000u) b0 |= 0x04u; /* PR (wire data[8] bit 2) */
     if (btn & 0x00000010u) b0 |= 0x08u; /* X */
     if (btn & 0x00000020u) b0 |= 0x10u; /* Y */
-    if (btn & 0x04000000u) b0 |= 0x20u; /* R4 */
+    if (btn & 0x02000000u) b0 |= 0x20u; /* PL (wire data[8] bit 5) */
     if (btn & 0x00000400u) b0 |= 0x40u; /* LB */
     if (btn & 0x00000800u) b0 |= 0x80u; /* RB */
 
@@ -90,8 +90,8 @@ void dinput_pack_hook(uint32_t btn, uint32_t sticks, uint32_t trig, uint8_t *dst
     if (btn & 0x00000002u) b1 |= 0x20u; /* L3 */
     if (btn & 0x00000004u) b1 |= 0x40u; /* R3 */
 
-    if (btn & 0x00200000u) b2 |= 0x01u; /* PL */
-    if (btn & 0x40000000u) b2 |= 0x02u; /* PR */
+    if (btn & 0x00200000u) b2 |= 0x01u; /* L4 (wire data[10] bit 0) */
+    if (btn & 0x40000000u) b2 |= 0x02u; /* R4 (wire data[10] bit 1) */
 
     dst[7]  = b0;
     dst[8]  = b1;

@@ -171,11 +171,10 @@ static void test_dinput_pack_and_send(void) {
 
     uint32_t btn = 0x00000240u   /* Hat = 1 (NE) */
                  | 0x00002000u   /* A -> b0 bit 0 */
-                 | 0x02000000u   /* L4 -> b0 bit 2 */
-                 | 0x04000000u   /* R4 -> b0 bit 5 */
+                 | 0x02000000u   /* PL -> b0 bit 5 (0x20) */
                  | 0x00000008u   /* SELECT -> b1 bit 2 */
-                 | 0x00200000u   /* PL -> b2 bit 0 */
-                 | 0x40000000u;  /* PR -> b2 bit 1 */
+                 | 0x00200000u   /* L4 -> b2 bit 0 (0x01) */
+                 | 0x40000000u;  /* R4 -> b2 bit 1 (0x02) */
     dinput_pack_hook(btn, 0x44332211u, 0x0000aabb, &wire[1]);
     dinput_send_hook(0, wire, 12);
 
@@ -188,10 +187,10 @@ static void test_dinput_pack_and_send(void) {
     assert(g_usb_send_last_buf[1] == 1u);    /* Hat NE */
     assert(g_usb_send_last_buf[2] == 0x11u && g_usb_send_last_buf[3] == 0x22u);
     assert(g_usb_send_last_buf[4] == 0x33u && g_usb_send_last_buf[5] == 0x44u);
-    assert(g_usb_send_last_buf[6] == 0xaau && g_usb_send_last_buf[7] == 0xbbu);
-    assert(g_usb_send_last_buf[8] == (0x01u | 0x04u | 0x20u));
+    assert(g_usb_send_last_buf[6] == 0xbbu && g_usb_send_last_buf[7] == 0xaau); /* RT=0xbb, LT=0xaa */
+    assert(g_usb_send_last_buf[8] == (0x01u | 0x20u)); /* A + PL */
     assert(g_usb_send_last_buf[9] == 0x04u);
-    assert(g_usb_send_last_buf[10] == 0x03u);
+    assert(g_usb_send_last_buf[10] == 0x03u); /* L4 + R4 */
     assert(g_usb_send_last_buf[11] == 0u && g_usb_send_last_buf[12] == 0u && g_usb_send_last_buf[13] == 0u);
     assert(g_usb_send_last_buf[14] == 0x5au);
     for (uint8_t i = 0; i < 12; ++i)
