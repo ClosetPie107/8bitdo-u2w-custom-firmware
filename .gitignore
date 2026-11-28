@@ -1,4 +1,5 @@
 patches/build/
+patches/u2bt_dongle/build/
 backups/
 *.bin
 *.dat

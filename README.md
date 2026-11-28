@@ -1,4 +1,18 @@
-# 8BitDo Ultimate 2 Wireless — Custom Firmware
+# 8BitDo Ultimate 2 — Custom Firmware
+
+Unofficial open-source custom firmware patches for two **different** 8BitDo Ultimate 2 hardware targets (commonly confused because both share the *"Ultimate 2"* name):
+
+| Hardware Target | Layout / Model | What Gets Flashed | Flasher | Guide |
+| --- | --- | --- | --- | --- |
+| **Ultimate 2 Wireless** (`PID 0x6012`, stock v1.10) | **Xbox** layout (A/B/X/Y) | **Controller** (Telink TLSR8258) | `tools/flash.py` | **This README** (below) |
+| **Ultimate 2 Bluetooth** (`PID 0x6011`, stock v1.03) | **Switch** layout (B/A/Y/X) | **2.4G USB Receiver** (JieLi BR22) | `tools/u2bt_flash.py` | **[U2BT_DONGLE.md](U2BT_DONGLE.md)** |
+
+> [!NOTE]
+> Both flashers verify hardware identity (`CMD_IDENTIFY` logical PID + bootloader checks) before erasing anything and will abort early if you accidentally run the wrong tool on the wrong controller or receiver.
+
+---
+
+## Ultimate 2 Wireless Controller (Telink TLSR8258, v1.10)
 
 Unofficial open-source Telink TLSR8258 firmware patches for the **8BitDo Ultimate 2 Wireless** (`VID 0x2DC8`, `PID 0x6012`, stock firmware **v1.10**), adding native **Nintendo Switch 2 Pro Controller BLE** support, **4 universal Bluetooth device slots**, an experimental **Xbox Elite Series 2 BLE** mode, and **persistent Bluetooth/2.4G mode memory** while keeping stock 8BitDo Bluetooth, 2.4G dongle, and USB modes intact.
 
