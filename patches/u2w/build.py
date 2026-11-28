@@ -12,8 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-PATCHES = ROOT / "patches"
+ROOT = Path(__file__).resolve().parents[2]
+PATCHES = Path(__file__).resolve().parent
 BUILD = PATCHES / "build"
 
 sys.path.insert(0, str(ROOT / "tools"))

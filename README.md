@@ -126,15 +126,15 @@ Requires the Telink `tc32-elf-gcc` toolchain (on `PATH`, at `~/.local/opt/tc32/b
 ```bash
 # Run host unit tests (exercises C protocol, GATT, CSA #2, PHY, and Elite code directly)
 cc -std=gnu99 -Wall -Wextra -Werror -DHOST_TEST \
-    patches/csa2.c patches/s2_gatt.c patches/s2_proto.c patches/test_s2_proto.c -o /tmp/test_s2_proto
+    patches/u2w/csa2.c patches/u2w/s2_gatt.c patches/u2w/s2_proto.c patches/u2w/test_s2_proto.c -o /tmp/test_s2_proto
 /tmp/test_s2_proto
 cc -std=gnu99 -Wall -Wextra -Werror -DHOST_TEST \
-    patches/elite.c patches/test_elite.c -o /tmp/test_elite
+    patches/u2w/elite.c patches/u2w/test_elite.c -o /tmp/test_elite
 /tmp/test_elite
-python3 patches/test_csa2.py
+python3 patches/u2w/test_csa2.py
 
 # Build patched image and regenerate dist/u2w-v1.10-switch2.patch.json
-python3 patches/build.py \
+python3 patches/u2w/build.py \
     --base backups/u2w-stock-v1.10.image.bin \
     --export-patch dist/u2w-v1.10-switch2.patch.json
 ```
