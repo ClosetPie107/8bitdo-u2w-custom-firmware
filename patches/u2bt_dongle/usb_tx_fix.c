@@ -1,5 +1,5 @@
 /*
- * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (JieLi BR22, stock public v1.02/v1.03)
+ * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (JieLi BR22, stock public v1.03)
  * Replacement for stock usb_g_intr_write() @ 0x1e02384.
  *
  * Fixes two stock bugs that deadlock/timeout runtime mode switching (especially XInput -> Switch):

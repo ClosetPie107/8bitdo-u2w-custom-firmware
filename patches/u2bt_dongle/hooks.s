@@ -1,5 +1,5 @@
 /*
- * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (stock public v1.02/v1.03)
+ * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (stock public v1.03)
  * pi32v2 hook trampolines placed at exact stock call/entry addresses via link.ld.
  */
 

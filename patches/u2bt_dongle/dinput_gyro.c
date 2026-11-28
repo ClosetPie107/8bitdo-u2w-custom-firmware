@@ -1,5 +1,5 @@
 /*
- * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (JieLi BR22, stock public v1.02/v1.03)
+ * 8BitDo Ultimate 2 Bluetooth 2.4G Receiver (JieLi BR22, stock public v1.03)
  * D-Input 34-byte 6-axis gyro + battery report packer & runtime mode-switch hotkeys.
  *
  * Placed in verified-zero flash cave at 0x1e32000 (540 bytes compiled with pi32v2 clang -Os).

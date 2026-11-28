@@ -24,7 +24,7 @@ APP_BASE = 0x1E000C0
 STOCK_APP_SHA256 = "217088cda39042866b468a2cec8d44d3e04e82aa073f0f0f142b40cd64face81"
 STOCK_DAT_SHA256 = "4e48804cacfd2baa436346b31aed3f6063855bcfb232a6cca3429a29939996d1"
 
-# Pinned container invariants for verified type 98 public v1.02/v1.03 hardware.
+# Pinned container invariants for verified type 98 public v1.03 hardware.
 EXPECTED_CHIP_KEY = 0x2F1B
 EXPECTED_APP_BASE = 0x4000
 EXPECTED_ENTRY_POINT = 0x1E000C0
@@ -177,7 +177,7 @@ def fetch_public_103(*, cache_path: Path | None = None) -> bytes:
 
 
 def load_stock_dat(path: Path, *, require_exact_v103: bool = False) -> bytes:
-    """Load and validate a stock type 98 public v1.02/v1.03 .dat image."""
+    """Load and validate a stock type 98 public v1.03 .dat image."""
     if not path.is_file():
         raise ValueError(f"not a regular file: {path}")
     raw = path.read_bytes()
@@ -189,7 +189,7 @@ def load_stock_dat(path: Path, *, require_exact_v103: bool = False) -> bytes:
     app_sha = sha256(files["app.bin"])
     if app_sha != STOCK_APP_SHA256:
         raise ValueError(
-            f"{path}: app.bin SHA-256 {app_sha} != expected stock public v1.02/v1.03 {STOCK_APP_SHA256}"
+            f"{path}: app.bin SHA-256 {app_sha} != expected stock public v1.03 {STOCK_APP_SHA256}"
         )
     return raw
 

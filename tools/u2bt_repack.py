@@ -99,7 +99,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("input", type=Path, help="Base type 98 .dat image (stock public v1.02/v1.03)")
+    parser.add_argument("input", type=Path, help="Base type 98 .dat image (stock public v1.03)")
     parser.add_argument("--self-test", action="store_true", help="Verify byte-for-byte round-trip")
     parser.add_argument("--app", type=Path, help="Replacement app.bin file")
     parser.add_argument(

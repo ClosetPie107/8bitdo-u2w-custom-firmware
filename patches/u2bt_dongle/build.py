@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build U2BT 2.4G receiver (type 98, public v1.02/v1.03) custom firmware from pi32v2 C/ASM sources."""
+"""Build U2BT 2.4G receiver (type 98, public v1.03) custom firmware from pi32v2 C/ASM sources."""
 
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def main() -> int:
     ap.add_argument(
         "--base",
         type=Path,
-        help="path to stock U2BT type 98 public v1.02/v1.03 .dat (omit with --fetch)",
+        help="path to stock U2BT type 98 public v1.03 .dat (omit with --fetch)",
     )
     ap.add_argument(
         "--fetch",

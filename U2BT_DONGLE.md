@@ -1,6 +1,6 @@
 # 8BitDo Ultimate 2 Bluetooth — 2.4G Receiver Custom Firmware
 
-Unofficial open-source JieLi BR22 (`pi32v2`) firmware patch for the **8BitDo Ultimate 2 Bluetooth 2.4G USB Receiver** (firmware type `98`, logical PID `0x6011`, stock public **v1.02 / v1.03**), adding **34-byte D-Input 6-axis gyro + battery + extra buttons (`L4`/`R4`/`PL`/`PR`)**, **runtime mode switching**, **Steam Input Ultimate 2 (`2dc8:6012`) support**, and a **fix for a stock USB interrupt-IN deadlock** during mode switches.
+Unofficial open-source JieLi BR22 (`pi32v2`) firmware patch for the **8BitDo Ultimate 2 Bluetooth 2.4G USB Receiver** (firmware type `98`, logical PID `0x6011`, stock public **v1.03**), adding **34-byte D-Input 6-axis gyro + battery + extra buttons (`L4`/`R4`/`PL`/`PR`)**, **runtime mode switching**, **Steam Input Ultimate 2 (`2dc8:6012`) support**, and a **fix for a stock USB interrupt-IN deadlock** during mode switches.
 
 > [!WARNING]
 > **Flashing custom firmware carries risk.**
@@ -62,7 +62,7 @@ python3 tools/u2bt_flash.py --fetch --restore --execute
 ### Optional Flags
 - `--pid 0x6011` — Keep stock D-Input PID instead of `0x6012`.
 - `--name "8BitDo UM 2 Receiver"` — Custom 20-character ASCII USB product string for D-Input mode.
-- `--base <path/to/stock.dat>` — Use a local stock public v1.02/v1.03 `.dat` instead of `--fetch`.
+- `--base <path/to/stock.dat>` — Use a local stock public v1.03 `.dat` instead of `--fetch`.
 
 ## Building from Source (Developers)
 

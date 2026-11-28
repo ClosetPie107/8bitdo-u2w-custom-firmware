@@ -410,7 +410,7 @@ def main() -> int:
     ap.add_argument(
         "--base",
         type=Path,
-        help="Path to local stock type 98 public v1.02/v1.03 .dat",
+        help="Path to local stock type 98 public v1.03 .dat",
     )
     ap.add_argument(
         "--dat",
